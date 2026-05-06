@@ -1,0 +1,545 @@
+"use client";
+
+import { navbar } from "@/../content/navbar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useDebounce } from "@/hooks/useDebounce";
+import { guestOrderPersistence } from "@/lib/guest-persistence";
+import { formatPrice } from "@/lib/utils";
+import { configService } from "@/services/config";
+import { productService } from "@/services/products";
+import { useCartStore } from "@/store/cart";
+import { useCurrencyStore } from "@/store/currency";
+import { useNotificationStore } from "@/store/notifications";
+import { useUIStore } from "@/store/ui";
+import { Product } from "@/types";
+import { useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+      Bell,
+      Heart,
+      Menu,
+      Package,
+      Search,
+      ShoppingCart,
+      User,
+      X,
+} from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+
+export function Navbar() {
+  const { user } = useAuth();
+  const {
+    toggleCart,
+    toggleMobileMenu,
+    toggleNotifications,
+    isMobileMenuOpen,
+  } = useUIStore();
+  const unreadCount = useNotificationStore((state) => state.unreadCount);
+  const { data: config, isLoading } = useQuery({
+    queryKey: ["publicConfig"],
+    queryFn: configService.getPublicConfig,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+  const [scrolled, setScrolled] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  const [categoriesTree, setCategoriesTree] = useState<any[]>([]);
+  const [mounted, setMounted] = useState(false);
+  const [isMobileSearchExpanded, setIsMobileSearchExpanded] = useState(false);
+  const [hasGuestOrders, setHasGuestOrders] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const { currency } = useCurrencyStore();
+  const searchContainerRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    productService.getCategoriesTree().then(setCategoriesTree);
+
+    // Verificar si hay pedidos de invitado
+    if (typeof window !== "undefined") {
+      const orders = guestOrderPersistence.getOrders();
+      setHasGuestOrders(orders.length > 0);
+    }
+  }, []);
+
+  const CategoryColumn = ({ category }: { category: any }) => {
+    const hasChildren = category.children && category.children.length > 0;
+
+    return (
+      <div className="break-inside-avoid mb-6">
+        <Link
+          href={`/products?category=${category.slug}`}
+          className="font-bold mb-2 text-primary block hover:underline"
+        >
+          {category.name}
+        </Link>
+        {hasChildren && (
+          <ul className="space-y-1 ml-1 pl-2 border-l border-border">
+            {category.children.map((child: any) => (
+              <li key={child.id}>
+                <Link
+                  href={`/products?category=${category.slug}&subcategoria=${child.slug}`}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors block py-0.5"
+                >
+                  {child.name}
+                </Link>
+                {child.children && child.children.length > 0 && (
+                  <ul className="pl-2 mt-1 space-y-1">
+                    {child.children.map((grandChild: any) => (
+                      <li key={grandChild.id}>
+                        <Link
+                          href={`/products?category=${category.slug}&subcategoria=${child.slug}&subcategoria=${grandChild.slug}`}
+                          className="text-xs text-muted-foreground/80 hover:text-primary transition-colors block"
+                        >
+                          - {grandChild.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    );
+  };
+
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchRef = useRef<HTMLDivElement>(null);
+  const debouncedSearch = useDebounce(searchQuery, 150);
+
+  const { getTotalItems } = useCartStore();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 32);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(e.target as Node) &&
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(e.target as Node)
+      ) {
+        setShowSearchResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (pathname.includes("/products")) {
+      return;
+    }
+
+    if (debouncedSearch.trim()) {
+      setIsSearching(true);
+      productService
+        .searchProducts(debouncedSearch as unknown as string)
+        .then((res) => {
+          setSearchResults(res.data.slice(0, navbar.search.sitewideLimit));
+          setShowSearchResults(true);
+        })
+        .catch(() => setSearchResults([]))
+        .finally(() => setIsSearching(false));
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      setIsSearching(false);
+    }
+  }, [debouncedSearch, pathname]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    router.push(`/products?search=${encodeURIComponent(searchQuery)}`);
+    setShowSearchResults(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setShowSearchResults(false);
+      setActiveMegaMenu(null);
+    }
+  };
+
+  return (
+    <motion.header
+      initial={{ y: 0 }}
+      animate={{
+        backgroundColor: scrolled ? "" : "rgba(255, 255, 255, 0.95)",
+      }}
+      transition={{ duration: 0.3 }}
+      className={`fixed z-50 transition-all duration-300 w-full lg:w-auto ${
+        scrolled
+          ? "top-2 lg:top-5 bg-secondary/60 backdrop-blur-md py-2 max-sm:py-1 w-[95%] max-sm:w-[90%] max-sm:-ml-[45%] lg:w-[80%] left-1/2 right-1/2 -ml-[47.5%] lg:-ml-[40%] -mr-[47.5%] lg:-mr-[40%] rounded-[1.5rem] lg:rounded-full shadow-2xl shadow-primary/20"
+          : "top-0 left-0 right-0  border-2 border-b-primary/20"
+      }`}
+      onKeyDown={handleKeyDown}
+    >
+      <div className=" mx-auto px-4 lg:px-16 w-full ">
+        <div
+          className={`flex items-center justify-between transition-all ${scrolled ? "h-12" : "h-16 lg:h-20"}`}
+        >
+          <Link
+            href="/"
+            className={`flex items-center gap-2 font-bold text-2xl transition-colors ${scrolled ? "text-white" : "text-primary"}`}
+          >
+            {isLoading ? (
+              <div
+                className={`animate-pulse bg-zinc-200/50 rounded-md ${scrolled ? "h-6 w-24" : "h-8 w-32"}`}
+              />
+            ) : config?.logoUrl ? (
+              <img
+                src={config.logoUrl}
+                alt={config.storeName || navbar.logo.alt}
+                className={
+                  scrolled
+                    ? "h-8 w-auto"
+                    : "h-7 md:h-8 w-auto max-lg:h-10 max-sm:h-8 "
+                }
+              />
+            ) : (
+              navbar.logo.text
+            )}
+          </Link>
+
+          <nav
+            className={`hidden lg:flex items-center gap-2 transition-all ${scrolled ? "" : "bg-white/40 backdrop-blur-sm rounded-full px-3 py-2"}`}
+          >
+            <Link
+              href="/"
+              className={`px-5 py-2 rounded-full text-sm font-medium transition-all  ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+            >
+              Inicio
+            </Link>
+
+            {/* Dropdown de Categorías */}
+            <div
+              className="relative"
+              onMouseEnter={() => setActiveMegaMenu("categories")}
+              onMouseLeave={() => setActiveMegaMenu(null)}
+            >
+              <button
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"} flex items-center gap-1`}
+                onClick={() =>
+                  setActiveMegaMenu(
+                    activeMegaMenu === "categories" ? null : "categories",
+                  )
+                }
+              >
+                Categorías
+              </button>
+
+              <AnimatePresence>
+                {activeMegaMenu === "categories" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    className="absolute top-full left-0 mt-2 bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-6 w-[800px] soft-shadow border border-border z-50"
+                  >
+                    <div className="grid grid-cols-4 gap-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                      {categoriesTree.length > 0 ? (
+                        categoriesTree.map((cat: any) => (
+                          <CategoryColumn key={cat.id} category={cat} />
+                        ))
+                      ) : (
+                        <div className="col-span-4 text-center text-muted-foreground py-8">
+                          Cargando categorías...
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-6 pt-4 border-t text-center">
+                      <Link
+                        href="/categories"
+                        className="text-primary font-bold hover:underline text-sm"
+                      >
+                        Ver Todas las Categorías
+                      </Link>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <Link
+              href="/products?isTrending=true"
+              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+            >
+              Ofertas
+            </Link>
+
+            {config?.navItemName && (
+              <Link
+                href="/custom"
+                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+              >
+                {config.navItemName}
+              </Link>
+            )}
+
+            <Link
+              href="/products"
+              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all  ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+            >
+              Todos
+            </Link>
+
+            {!pathname.includes("/products") && (
+              <form
+                ref={searchContainerRef}
+                onSubmit={handleSearchSubmit}
+                className="relative hidden lg:block ml-4"
+              >
+                <Input
+                  type="search"
+                  placeholder={navbar.search.placeholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setShowSearchResults(true)}
+                  className={`w-64 pr-10 rounded-lg transition-all ${
+                    scrolled
+                      ? "bg-white/20 focus:bg-white/40 text-white placeholder:text-white/60 border-white/20"
+                      : "bg-gray-100 focus:bg-white text-gray-700 placeholder:text-gray-500 border-transparent"
+                  }`}
+                />
+                <Search
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 ${scrolled ? "text-white/60" : "text-gray-500"}`}
+                />
+
+                <AnimatePresence>
+                  {showSearchResults && searchQuery.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-md shadow-xl rounded-xl p-2 max-h-80 w-80 overflow-auto z-50 border border-border"
+                    >
+                      {isSearching ? (
+                        <div className="p-4 text-center text-muted-foreground text-sm">
+                          Buscando...
+                        </div>
+                      ) : searchResults.length > 0 ? (
+                        <>
+                          {searchResults.map((product) => (
+                            <Link
+                              key={product.id}
+                              href={`/products/${product.qr || product.id}`}
+                              className="flex items-center justify-between gap-3 p-2 hover:bg-primary/5 rounded-lg transition-colors w-full"
+                              onClick={() => setShowSearchResults(false)}
+                            >
+                              <div className="flex items-center gap-3 w-full">
+                                <div className="relative w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden flex-shrink-0">
+                                  {product.images && product.images[0] ? (
+                                    <Image
+                                      src={
+                                        (product.images[0] as any).url ||
+                                        product.images[0]
+                                      }
+                                      alt={product.name}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  ) : (
+                                    <Package className="w-5 h-5 text-gray-400" />
+                                  )}
+                                </div>
+                                <div className="flex flex-col flex-grow min-w-0 text-left">
+                                  <span className="font-semibold text-sm truncate text-gray-900 block">
+                                    {product.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground truncate block">
+                                    {product.brand || "Sin marca"}
+                                  </span>
+                                  <span className="text-sm text-primary font-bold mt-0.5 block">
+                                    {formatPrice(
+                                      product.basePrice || product.price,
+                                      product.currencyCode || currency,
+                                    )}
+                                  </span>
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                          <div className="mt-2 text-center border-t pt-2">
+                            <Link
+                              href={`/products?search=${encodeURIComponent(searchQuery)}`}
+                              className="text-xs text-primary hover:underline font-semibold block w-full py-1"
+                              onClick={() => setShowSearchResults(false)}
+                            >
+                              Ver todos los resultados para &quot;{searchQuery}
+                              &quot;
+                            </Link>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-4 text-center text-muted-foreground text-sm">
+                          No se encontraron productos.
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </form>
+            )}
+          </nav>
+
+          <div className="flex items-center gap-1 lg:gap-4" ref={searchRef}>
+            {!pathname.includes("/products") && (
+              <div className="flex items-center">
+                <AnimatePresence>
+                  {isMobileSearchExpanded && (
+                    <motion.form
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: "160px", opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      onSubmit={handleSearchSubmit}
+                      className="lg:hidden flex items-center relative mr-2"
+                    >
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Buscar..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className={`w-full h-9 px-3 pr-8 rounded-full text-xs focus:outline-none transition-all ${
+                          scrolled
+                            ? "bg-white/20 border-white/30 text-white placeholder:text-white/70"
+                            : "bg-gray-100 border-gray-200 text-gray-900 placeholder:text-gray-500"
+                        } border`}
+                      />
+                      <button
+                        type="submit"
+                        className={`absolute right-2 ${scrolled ? "text-white" : "text-gray-500"}`}
+                      >
+                        <Search className="h-4 w-4" />
+                      </button>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
+
+                <Button
+                  variant="ghost"
+                  className={`rounded-lg p-2 h-auto w-auto lg:hidden ${scrolled ? "text-white hover:bg-white/20" : "text-primary hover:bg-secondary/10"}`}
+                  onClick={() =>
+                    setIsMobileSearchExpanded(!isMobileSearchExpanded)
+                  }
+                >
+                  {isMobileSearchExpanded ? (
+                    <X className="!h-6 !w-6" />
+                  ) : (
+                    <Search className="!h-6 !w-6" />
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {mounted && (
+              <Button
+                variant="ghost"
+                title="Mis Pedidos"
+                className={`rounded-lg hover:bg-white/50 p-2 h-auto w-auto hidden sm:flex ${scrolled ? "text-white" : "hover:bg-secondary/60 hover:text-white"}`}
+                onClick={() => router.push("/profile?tab=orders")}
+              >
+                <Package className="!h-7 !w-7" />
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
+              className={`rounded-lg hover:bg-white/50 p-2 h-auto w-auto hidden sm:flex ${scrolled ? "text-white" : "hover:bg-secondary/60 hover:text-white"}`}
+              onClick={() => router.push(user ? "/profile" : "/login")}
+            >
+              <User className="!h-7 !w-7" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              className={`rounded-lg hover:bg-white/50 p-2 h-auto w-auto hidden sm:flex ${scrolled ? "text-white" : "hover:bg-secondary/60 hover:text-white"}`}
+              onClick={() => router.push("/favorites")}
+            >
+              <Heart className="!h-7 !w-7" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              className={`relative rounded-lg hover:bg-white/50 p-2 h-auto w-auto hidden sm:flex ${scrolled ? "text-white" : "hover:bg-secondary/60 hover:text-white"}`}
+              onClick={toggleCart}
+            >
+              <ShoppingCart className="!h-7 !w-7" />
+              {mounted && getTotalItems() > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold border-2 border-white">
+                  {getTotalItems()}
+                </span>
+              )}
+            </Button>
+
+            {user && (
+              <Button
+                variant="ghost"
+                className={`relative rounded-lg hover:bg-white/50 p-2 h-auto w-auto sm:hidden ${scrolled ? "text-white" : "text-primary"}`}
+                onClick={toggleNotifications}
+              >
+                <Bell className="!h-7 !w-7" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-2 right-2 h-3 w-3 rounded-full bg-red-500 border-2 border-background animate-pulse" />
+                )}
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden rounded-lg flex items-center justify-center p-2"
+              onClick={toggleMobileMenu}
+            >
+              {mounted && isMobileMenuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Efecto de onda para móvil (solo cuando está arriba) */}
+      {!scrolled && (
+        <div className="sm:hidden absolute top-full left-0 w-full h-8 pointer-events-none -translate-y-1">
+          <svg
+            viewBox="0 0 500 150"
+            preserveAspectRatio="none"
+            className="h-full w-full rotate-180"
+          >
+            <path
+              d="M0,50 C150,150 350,-50 500,50 L500,150 L0,150 Z"
+              fill="rgba(255,255,255,0.99)"
+            />
+
+            <path
+              d="M0,50 C150,150 350,-50 500,50"
+              fill="none"
+              stroke="hsl(var(--primary) / 0.3)"
+              strokeWidth="8"
+            />
+          </svg>
+        </div>
+      )}
+    </motion.header>
+  );
+}
