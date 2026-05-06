@@ -139,7 +139,7 @@ export default function CartContent() {
   const [pointsToUse, setPointsToUse] = useState<number>(0);
   const [appliedPoints, setAppliedPoints] = useState<number>(0);
   const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
+
   const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
   const [lugarNumero, setLugarNumero] = useState<number | null>(null);
   const [whatsappCoordination, setWhatsappCoordination] = useState("");
@@ -382,7 +382,8 @@ export default function CartContent() {
       deliveryData.method === "shipping" &&
       customerData.city &&
       customerData.state &&
-      customerData.zipCode
+      customerData.zipCode &&
+      !selectedZoneId
     ) {
       shippingMutation.mutate({
         city: customerData.city,
@@ -397,6 +398,7 @@ export default function CartContent() {
     customerData.state,
     customerData.zipCode,
     customerData.country,
+    selectedZoneId,
   ]);
 
   const isAddressValid = useMemo(() => {
@@ -464,6 +466,7 @@ export default function CartContent() {
         pointsToUse: appliedPoints,
         currencyCode: currency || undefined,
         userId: user?.id ? Number(user.id) : undefined,
+        shippingCost: deliveryData.method === "shipping" ? (lugarNumero ?? undefined) : undefined,
       };
 
       if (deliveryData.method === "pickup" && deliveryData.pickupBranchId) {
@@ -540,6 +543,7 @@ export default function CartContent() {
             }
           : null,
       userId: user?.id,
+      shippingCost: deliveryData.method === "shipping" ? lugarNumero : undefined,
     });
   }, [
     debouncedItems,
@@ -554,6 +558,7 @@ export default function CartContent() {
     customerData.zipCode,
     customerData.country,
     user?.id,
+    lugarNumero,
   ]);
 
   const prevDepsRef = useRef<string>("");
@@ -642,6 +647,7 @@ export default function CartContent() {
           pointsToUse: appliedPoints,
           createAccount,
           paymentType: (selectedGateway as any) || "MERCADO_PAGO",
+          shippingCost: deliveryData.method === "shipping" ? (lugarNumero ?? undefined) : undefined,
         },
         idempotencyKey,
         { headers: { "x-silence-toast": "true" } },
@@ -1235,7 +1241,7 @@ export default function CartContent() {
                               setCouponCode(e.target.value.toUpperCase())
                             }
                             disabled={isUpdating}
-                            className="rounded-full border-2 border-primary/40 focus:border-primary bg-white/50 backdrop-blur-sm"
+                            className="rounded-full border-2 border-primary/40 focus:border-primary bg-white/50 backdrop-blur-sm text-gray-900 placeholder:text-gray-400"
                           />
                           <Button
                             onClick={handleApplyCoupon}
@@ -1255,29 +1261,29 @@ export default function CartContent() {
                     </div>
                   )}
 
-                  {/* Coordinación por WhatsApp */}
-                  <div className="mt-8 pt-6 border-t border-primary/10 space-y-4">
-                    <Label className="font-bold text-base block">
-                      Coordinar por WhatsApp
+                  {/* WhatsApp para coordinar */}
+                  <div className="mt-6 pt-6 border-t border-primary/10 space-y-3">
+                    <Label className="font-bold text-base block text-primary">
+                      Whatsapp para coordinar:
                     </Label>
-                    {storeConfig?.contactPhone && (
-                      <div className="p-3 bg-primary/5 rounded-xl border border-primary/10 text-sm text-muted-foreground flex justify-between items-center">
-                        <span>Número del Administrador:</span>
-                        <span className="font-bold text-primary">{storeConfig.contactPhone}</span>
-                      </div>
-                    )}
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold text-muted-foreground">
-                        Ingresa tu número de WhatsApp para coordinar:
-                      </Label>
+                    <div className="relative">
                       <Input
                         type="tel"
-                        placeholder="Ej: +5491122334455"
+                        inputMode="numeric"
+                        placeholder="Ingresa solo números (ej: 5491122334455)"
                         value={whatsappCoordination}
-                        onChange={(e) => setWhatsappCoordination(e.target.value)}
-                        className="rounded-full border-2 border-primary/40 focus:border-primary bg-white/50 backdrop-blur-sm h-12"
+                        onChange={(e) => {
+                          const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+                          setWhatsappCoordination(onlyNums);
+                        }}
+                        className="rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 backdrop-blur-sm h-12 text-gray-900 placeholder:text-gray-400 font-medium"
                       />
                     </div>
+                    {storeConfig?.contactPhone && (
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider pl-1">
+                        Se coordinará la entrega con el comercio vía WhatsApp.
+                      </p>
+                    )}
                   </div>
 
                   {/* Canje de puntos */}
@@ -1855,134 +1861,106 @@ export default function CartContent() {
 
                   {deliveryData.method === "shipping" && (
                     <div className="p-6 bg-white/50 rounded-2xl border border-primary/10 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <MapPin className="h-5 w-5 text-primary" />
-                          <p className="font-bold text-lg">Dirección de Envío</p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setIsEditingAddress(!isEditingAddress)}
-                          className="text-primary font-bold hover:bg-primary/5 rounded-full"
-                        >
-                          {isEditingAddress ? "Cancelar" : "Cambiar direccion"}
-                        </Button>
+                      <div className="flex items-center gap-2 mb-2">
+                        <MapPin className="h-5 w-5 text-primary" />
+                        <p className="font-bold text-lg">Dirección de Envío</p>
                       </div>
 
-                      {!isEditingAddress ? (
-                        <>
-                          <p className="text-lg font-medium ml-7">
-                            {customerData.address}
-                          </p>
-                          <div className="flex gap-2 text-sm text-muted-foreground ml-7">
-                            <span>
-                              {customerData.city}, {customerData.state}
-                            </span>
-                            <span>•</span>
-                            <span>{customerData.zipCode}</span>
-                          </div>
-                          <p className="text-sm text-muted-foreground ml-7">
-                            {customerData.country}
-                          </p>
-                        </>
-                      ) : (
-                        <div className="space-y-4 ml-7 animate-in fade-in duration-200">
+                      <div className="space-y-4 ml-7 animate-in fade-in duration-200">
+                        <div>
+                          <Label className="font-semibold mb-1.5 block">
+                            Dirección *
+                          </Label>
+                          <Input
+                            value={customerData.address}
+                            onChange={(e) =>
+                              setCustomerData((prev) => ({
+                                ...prev,
+                                address: e.target.value,
+                              }))
+                            }
+                            placeholder="Calle y altura"
+                            className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 text-gray-900 placeholder:text-gray-400"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <Label className="font-semibold mb-1.5 block">
-                              Dirección *
+                              Lugar *
                             </Label>
-                            <Input
-                              value={customerData.address}
-                              onChange={(e) =>
-                                setCustomerData((prev) => ({
-                                  ...prev,
-                                  address: e.target.value,
-                                }))
-                              }
-                              placeholder="Calle y altura"
-                              className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50"
-                            />
-                          </div>
-
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <Label className="font-semibold mb-1.5 block">
-                                Lugar *
-                              </Label>
-                              <Select
-                                value={selectedZoneId || ""}
-                                onValueChange={(value) => {
-                                  const zone = shippingZones.find(z => String(z.id) === value);
-                                  if (zone) {
-                                    setSelectedZoneId(value);
-                                    setLugarNumero(zone.cost);
-                                    setCustomerData((prev) => ({
-                                      ...prev,
-                                      city: zone.city || "",
-                                      state: zone.province || "",
-                                      country: zone.country || prev.country || "",
-                                    }));
-                                  }
-                                }}
-                              >
-                                <SelectTrigger className="w-full bg-white/50 backdrop-blur-sm border-primary/40 h-12 rounded-xl">
-                                  <SelectValue placeholder="Seleccionar Lugar" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {shippingZones.map((zone) => (
-                                    <SelectItem key={zone.id} value={String(zone.id)}>
-                                      {zone.city}, {zone.province}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <Label className="font-semibold mb-1.5 block">
-                                Número *
-                              </Label>
-                              <Input
-                                type="number"
-                                value={lugarNumero ?? ""}
-                                onChange={(e) => setLugarNumero(Number(e.target.value))}
-                                placeholder="Número de costo"
-                                className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50"
-                              />
-                            </div>
+                            <Select
+                              value={selectedZoneId || ""}
+                              onValueChange={(value) => {
+                                const zone = shippingZones.find(z => String(z.id) === value);
+                                if (zone) {
+                                  setSelectedZoneId(value);
+                                  setLugarNumero(Number(zone.cost));
+                                  setCustomerData((prev) => ({
+                                    ...prev,
+                                    city: zone.city || "",
+                                    state: zone.province || "",
+                                    country: zone.country || prev.country || "",
+                                  }));
+                                }
+                              }}
+                            >
+                              <SelectTrigger className="w-full bg-white/50 backdrop-blur-sm border-primary/40 h-12 rounded-xl text-gray-900">
+                                <SelectValue placeholder="Seleccionar Lugar" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {shippingZones.map((zone) => (
+                                  <SelectItem key={zone.id} value={String(zone.id)}>
+                                    {[zone.city, zone.province, zone.country].filter(Boolean).join(", ")}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
 
                           <div>
                             <Label className="font-semibold mb-1.5 block">
-                              Código Postal *
+                              Número (Costo de Envío) *
                             </Label>
                             <Input
-                              value={customerData.zipCode}
-                              onChange={(e) =>
-                                setCustomerData((prev) => ({
-                                  ...prev,
-                                  zipCode: e.target.value,
-                                }))
-                              }
-                              placeholder="Código Postal"
-                              className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50"
+                              type="number"
+                              value={lugarNumero ?? ""}
+                              onChange={(e) => setLugarNumero(Number(e.target.value))}
+                              placeholder="Costo de envío"
+                              className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 text-gray-900 placeholder:text-gray-400"
                             />
                           </div>
                         </div>
-                      )}
+
+                        <div>
+                          <Label className="font-semibold mb-1.5 block">
+                            Código Postal *
+                          </Label>
+                          <Input
+                            value={customerData.zipCode}
+                            onChange={(e) =>
+                              setCustomerData((prev) => ({
+                                ...prev,
+                                zipCode: e.target.value,
+                              }))
+                            }
+                            placeholder="Código Postal"
+                            className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 text-gray-900 placeholder:text-gray-400"
+                          />
+                        </div>
+                      </div>
 
                       <div className="ml-7 pt-2">
-                        {shippingMutation.isPending ? (
+                        {previewMutation.isPending ? (
                           <p className="text-sm text-primary animate-pulse flex items-center gap-2">
                             <Loader2 className="h-3 w-3 animate-spin" />{" "}
-                            Calculando costo de envío...
+                            Actualizando costo de envío...
                           </p>
                         ) : (
                           <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full w-fit">
                             <Check className="h-3 w-3" />
                             <span className="text-xs font-bold">
-                              Costo calculado correctamente
+                              Costo de envío actualizado
                             </span>
                           </div>
                         )}
@@ -2127,55 +2105,68 @@ export default function CartContent() {
                           </div>
 
                           {/* Subir Captura de Pago */}
-                          <div className="space-y-2">
+                          <div className="space-y-3">
                             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                               Captura del Comprobante
                             </Label>
-                            <div
-                              onClick={() => qrFileInputRef.current?.click()}
-                              className="aspect-video max-h-[180px] rounded-2xl border-2 border-dashed border-secondary/30 bg-secondary/5 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/10 transition-all group overflow-hidden relative"
-                            >
-                              {qrPaymentProof ? (
-                                <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm p-4 text-center animate-in fade-in duration-300">
-                                  <CheckCircle2 className="h-10 w-10 text-green-500 mb-1" />
-                                  <p className="font-black text-xs text-primary line-clamp-1 font-mono">
-                                    {qrPaymentProof.name}
-                                  </p>
-                                  <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">
-                                    {(qrPaymentProof.size / 1024 / 1024).toFixed(2)} MB
-                                  </p>
-                                  <p className="text-[10px] text-secondary font-bold uppercase mt-1">
-                                    Haz clic para cambiar
-                                  </p>
-                                </div>
-                              ) : (
-                                <>
-                                  <Upload size={24} className="text-secondary group-hover:scale-110 transition-transform mb-2" />
-                                  <span className="font-bold text-xs text-secondary tracking-tight">
-                                    Subir Captura de Pago
-                                  </span>
-                                  <span className="text-[9px] text-muted-foreground font-semibold mt-0.5">
-                                    PNG, JPG (Máx 5MB)
-                                  </span>
-                                </>
-                              )}
-                              <input
-                                type="file"
-                                className="hidden"
-                                ref={qrFileInputRef}
-                                onChange={(e) => {
-                                  if (e.target.files && e.target.files[0]) {
-                                    const file = e.target.files[0];
-                                    if (file.size > 5 * 1024 * 1024) {
-                                      toast.error("El archivo es demasiado grande (máx 5MB)");
-                                      return;
-                                    }
-                                    setQrPaymentProof(file);
-                                  }
-                                }}
-                                accept="image/*"
-                              />
+                            
+                            <div className="flex flex-col gap-3">
+                              <Button
+                                type="button"
+                                onClick={() => qrFileInputRef.current?.click()}
+                                className="w-full h-12 text-sm font-bold rounded-xl bg-gradient-to-r from-secondary to-primary hover:opacity-90 shadow-md flex items-center justify-center gap-2 text-white transition-all duration-300"
+                              >
+                                <Upload size={18} />
+                                Subir Captura de Pago
+                              </Button>
+
+                              <div
+                                onClick={() => qrFileInputRef.current?.click()}
+                                className="aspect-video max-h-[160px] rounded-2xl border-2 border-dashed border-secondary/30 bg-secondary/5 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/10 transition-all group overflow-hidden relative"
+                              >
+                                {qrPaymentProof ? (
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm p-4 text-center animate-in fade-in duration-300">
+                                    <CheckCircle2 className="h-10 w-10 text-green-500 mb-1" />
+                                    <p className="font-black text-xs text-primary line-clamp-1 font-mono">
+                                      {qrPaymentProof.name}
+                                    </p>
+                                    <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">
+                                      {(qrPaymentProof.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                    <p className="text-[10px] text-secondary font-bold uppercase mt-1">
+                                      Haz clic o presiona el botón para cambiar
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Upload size={24} className="text-secondary/60 group-hover:scale-110 transition-transform mb-2" />
+                                    <span className="font-bold text-xs text-secondary/80 tracking-tight">
+                                      Vista previa de la captura
+                                    </span>
+                                    <span className="text-[9px] text-muted-foreground font-semibold mt-0.5">
+                                      PNG, JPG (Máx 5MB)
+                                    </span>
+                                  </>
+                                )}
+                              </div>
                             </div>
+
+                            <input
+                              type="file"
+                              className="hidden"
+                              ref={qrFileInputRef}
+                              onChange={(e) => {
+                                if (e.target.files && e.target.files[0]) {
+                                  const file = e.target.files[0];
+                                  if (file.size > 5 * 1024 * 1024) {
+                                    toast.error("El archivo es demasiado grande (máx 5MB)");
+                                    return;
+                                  }
+                                  setQrPaymentProof(file);
+                                }
+                              }}
+                              accept="image/*"
+                            />
                           </div>
                         </Card>
                       )}

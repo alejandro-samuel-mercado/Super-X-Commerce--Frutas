@@ -19,6 +19,7 @@ export interface OrderPreviewRequest {
     country?: string;
     zip?: string;
   } | null;
+  shippingCost?: number;
 }
 
 export interface OrderPreviewResponse {
@@ -81,6 +82,7 @@ export interface CreateOrderRequest {
   createAccount?: boolean;
   currencyCode?: string;
   customPaymentData?: any;
+  shippingCost?: number;
 }
 
 export interface CreateOrderResponse {
