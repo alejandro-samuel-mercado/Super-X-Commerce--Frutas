@@ -666,6 +666,7 @@ export default function CartContent() {
 
         const checkoutUrl = data.checkoutUrl;
         const saleId = data.id || data.saleId;
+        const targetRef = data.uuid || data.id || data.saleId;
 
         if (selectedGateway === "QR" && saleId) {
           if (qrPaymentProof) {
@@ -673,7 +674,7 @@ export default function CartContent() {
             const formData = new FormData();
             formData.append("image", qrPaymentProof);
             try {
-              await http(`/api/sales/${saleId}/payment-proof`, {
+              await http(`/api/sales/${targetRef}/payment-proof`, {
                 method: "POST",
                 body: formData,
               });
@@ -685,7 +686,7 @@ export default function CartContent() {
               setIsUploadingProof(false);
             }
           }
-          router.push(`/checkout/pending?saleId=${saleId}`);
+          router.push(`/checkout/pending?saleId=${targetRef}`);
           setIsRedirecting(false);
           return;
         }
