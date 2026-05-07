@@ -1926,9 +1926,9 @@ export default function CartContent() {
                             <Input
                               type="number"
                               value={lugarNumero ?? ""}
-                              onChange={(e) => setLugarNumero(Number(e.target.value))}
+                              readOnly
                               placeholder="Costo de envío"
-                              className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 text-gray-900 placeholder:text-gray-400"
+                              className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-gray-100 text-gray-900 placeholder:text-gray-400 cursor-not-allowed"
                             />
                           </div>
                         </div>
