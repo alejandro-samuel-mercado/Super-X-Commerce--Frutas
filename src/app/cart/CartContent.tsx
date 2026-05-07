@@ -2601,7 +2601,8 @@ export default function CartContent() {
                       !selectedGateway ||
                       isRedirecting ||
                       preview === null ||
-                      (preview?.total !== undefined && preview.total <= 0)
+                      (preview?.total !== undefined && preview.total <= 0) ||
+                      (selectedGateway === "QR" && !qrPaymentProof)
                     }
                   >
                     {createOrderMutation.isPending || isUploadingProof || isRedirecting ? (
@@ -2613,6 +2614,8 @@ export default function CartContent() {
                           ? "Redirigiendo..."
                           : cartContent.step4.placingOrder}
                       </>
+                    ) : selectedGateway === "QR" && !qrPaymentProof ? (
+                      "Falta captura de pago"
                     ) : (
                       cartContent.step4.placeOrder
                     )}
