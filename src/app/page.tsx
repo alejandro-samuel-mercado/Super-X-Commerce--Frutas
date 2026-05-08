@@ -8,6 +8,7 @@ import { SecondaryAds } from "@/components/features/home/SecondaryAds";
 import { Testimonials } from "@/components/features/home/Testimonials";
 import { TrendingProducts } from "@/components/features/home/TrendingProducts";
 import dynamic from "next/dynamic";
+import { Suspense } from "react";
 
 const InstitutionalVideo = dynamic(
     () => import("@/components/features/home/InstitutionalVideo").then((mod) => mod.InstitutionalVideo),
@@ -17,7 +18,9 @@ const InstitutionalVideo = dynamic(
 export default function HomePage() {
     return (
         <main className="min-h-screen relative  md:px-10">
-            <Hero />
+            <Suspense fallback={<div className="h-[85vh] bg-zinc-900/10 animate-pulse rounded-[2.5rem] mt-6" />}>
+                <Hero />
+            </Suspense>
 
             <Marquee />
 
