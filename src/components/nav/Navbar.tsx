@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 export function Navbar() {
@@ -114,6 +114,19 @@ export function Navbar() {
 
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const getNavLinkClass = (isActive: boolean) => {
+    if (isActive) {
+      return scrolled
+        ? "px-5 py-2.5 rounded-full text-sm font-bold transition-all bg-white text-secondary shadow-md"
+        : "px-5 py-2.5 rounded-full text-sm font-bold transition-all bg-primary text-white shadow-lg shadow-primary/20";
+    } else {
+      return scrolled
+        ? "px-5 py-2.5 rounded-full text-sm font-medium transition-all text-white hover:bg-white hover:text-gray-700"
+        : "px-5 py-2.5 rounded-full text-sm font-medium transition-all text-foreground hover:bg-secondary/60 hover:text-white";
+    }
+  };
   const searchRef = useRef<HTMLDivElement>(null);
   const debouncedSearch = useDebounce(searchQuery, 150);
 
@@ -223,7 +236,7 @@ export function Navbar() {
           >
             <Link
               href="/"
-              className={`px-5 py-2 rounded-full text-sm font-medium transition-all  ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+              className={getNavLinkClass(pathname === "/")}
             >
               Inicio
             </Link>
@@ -235,7 +248,11 @@ export function Navbar() {
               onMouseLeave={() => setActiveMegaMenu(null)}
             >
               <button
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"} flex items-center gap-1`}
+                className={`${getNavLinkClass(
+                  pathname === "/categories" ||
+                  pathname.startsWith("/categories") ||
+                  activeMegaMenu === "categories"
+                )} flex items-center gap-1`}
                 onClick={() =>
                   setActiveMegaMenu(
                     activeMegaMenu === "categories" ? null : "categories",
@@ -279,7 +296,9 @@ export function Navbar() {
 
             <Link
               href="/products?isTrending=true"
-              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+              className={getNavLinkClass(
+                pathname === "/products" && searchParams?.get("isTrending") === "true"
+              )}
             >
               Ofertas
             </Link>
@@ -287,7 +306,7 @@ export function Navbar() {
             {config?.navItemName && (
               <Link
                 href="/custom"
-                className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+                className={getNavLinkClass(pathname === "/custom")}
               >
                 {config.navItemName}
               </Link>
@@ -295,7 +314,9 @@ export function Navbar() {
 
             <Link
               href="/products"
-              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all  ${scrolled ? "text-white hover:bg-white hover:text-gray-700" : "text-foreground hover:bg-secondary/60 hover:text-white"}`}
+              className={getNavLinkClass(
+                pathname === "/products" && searchParams?.get("isTrending") !== "true"
+              )}
             >
               Todos
             </Link>

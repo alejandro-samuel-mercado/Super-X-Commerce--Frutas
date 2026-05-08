@@ -81,7 +81,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                 }} />
             )}
 
-            {!isHomePage && <Navbar />}
+            {!isHomePage && (
+                <Suspense fallback={<div className="h-20" />}>
+                    <Navbar />
+                </Suspense>
+            )}
             <div className={!isHomePage ? "pt-16  md:pt-2  " : "max-sm:px-2 max-md:px-6 max-xl:px-10 overflow-x-hidden"}>
                 {children}
             </div>
