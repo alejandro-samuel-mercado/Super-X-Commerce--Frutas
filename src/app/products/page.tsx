@@ -414,7 +414,7 @@ function ProductsContent() {
           {/* Grid de productos */}
           <div className="flex-1 min-h-[1000px]">
             {isLoading || isFetching ? (
-              <div className="grid  md:grid-cols-3 grid-cols-4 max-md:grid-cols-1 gap-6">
+              <div className="grid  md:grid-cols-3 grid-cols-4 max-md:grid-cols-2 gap-6">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <ProductSkeleton key={i} />
                 ))}
@@ -436,7 +436,7 @@ function ProductsContent() {
               </div>
             ) : (
               <>
-                <div className="grid max-md:grid-cols-2 max-sm:grid-cols-1 max-xl:grid-cols-3  grid-cols-4 gap-6">
+                <div className="grid max-md:grid-cols-2 max-sm:grid-cols-2 max-xl:grid-cols-3  grid-cols-4 gap-6">
                   {data.data.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}

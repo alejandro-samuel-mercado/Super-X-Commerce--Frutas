@@ -537,6 +537,46 @@ export function Navbar() {
             </Button>
           </div>
         </div>
+
+        {/* Ítems flotantes móviles debajo de la búsqueda */}
+        <div className="flex lg:hidden items-center justify-center gap-3 pb-2.5 pt-1.5 border-t border-primary/10 dark:border-white/10">
+          <Link
+            href="/products?category=frutas"
+            className={`px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide uppercase transition-all duration-300 ${
+              pathname === "/products" && searchParams?.get("category") === "frutas"
+                ? "bg-amber-500 text-white shadow-md shadow-amber-500/20 scale-105"
+                : scrolled
+                  ? "text-white/90 bg-white/10 hover:bg-white/20"
+                  : "text-gray-600 bg-gray-100 hover:bg-gray-200"
+            }`}
+          >
+            Frutas
+          </Link>
+          <Link
+            href="/products?category=verduras"
+            className={`px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide uppercase transition-all duration-300 ${
+              pathname === "/products" && searchParams?.get("category") === "verduras"
+                ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-105"
+                : scrolled
+                  ? "text-white/90 bg-white/10 hover:bg-white/20"
+                  : "text-gray-600 bg-gray-100 hover:bg-gray-200"
+            }`}
+          >
+            Verduras
+          </Link>
+          <Link
+            href="/products?isTrending=true"
+            className={`px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide uppercase transition-all duration-300 ${
+              pathname === "/products" && searchParams?.get("isTrending") === "true"
+                ? "bg-rose-500 text-white shadow-md shadow-rose-500/20 scale-105"
+                : scrolled
+                  ? "text-white/90 bg-white/10 hover:bg-white/20"
+                  : "text-gray-600 bg-gray-100 hover:bg-gray-200"
+            }`}
+          >
+            Ofertas
+          </Link>
+        </div>
       </div>
 
       {/* Efecto de onda para móvil (solo cuando está arriba) */}

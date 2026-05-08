@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -61,6 +61,8 @@ export function Hero() {
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { getTotalItems } = useCartStore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -573,6 +575,46 @@ export function Hero() {
                 )}
               </Button>
             </div>
+          </div>
+
+          {/* Ítems flotantes móviles debajo de la búsqueda */}
+          <div className="flex lg:hidden items-center justify-center gap-3 pb-2.5 pt-1.5 border-t border-white/10">
+            <Link
+              href="/products?category=frutas"
+              className={`px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide uppercase transition-all duration-300 ${
+                pathname === "/products" && searchParams?.get("category") === "frutas"
+                  ? "bg-amber-500 text-white shadow-md shadow-amber-500/20 scale-105"
+                  : scrolled
+                    ? "text-white/90 bg-white/10 hover:bg-white/20"
+                    : "text-white/90 bg-white/15 hover:bg-white/25"
+              }`}
+            >
+              Frutas
+            </Link>
+            <Link
+              href="/products?category=verduras"
+              className={`px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide uppercase transition-all duration-300 ${
+                pathname === "/products" && searchParams?.get("category") === "verduras"
+                  ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20 scale-105"
+                  : scrolled
+                    ? "text-white/90 bg-white/10 hover:bg-white/20"
+                    : "text-white/90 bg-white/15 hover:bg-white/25"
+              }`}
+            >
+              Verduras
+            </Link>
+            <Link
+              href="/products?isTrending=true"
+              className={`px-3.5 py-1.5 rounded-full text-xs font-black tracking-wide uppercase transition-all duration-300 ${
+                pathname === "/products" && searchParams?.get("isTrending") === "true"
+                  ? "bg-rose-500 text-white shadow-md shadow-rose-500/20 scale-105"
+                  : scrolled
+                    ? "text-white/90 bg-white/10 hover:bg-white/20"
+                    : "text-white/90 bg-white/15 hover:bg-white/25"
+              }`}
+            >
+              Ofertas
+            </Link>
           </div>
         </div>
         {!scrolled && (
