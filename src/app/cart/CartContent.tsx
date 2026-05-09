@@ -168,13 +168,13 @@ export default function CartContent() {
     const [customerData, setCustomerData] = useState<CustomerData>(() => {
         if (user) {
             return {
-                email: user.email,
-                name: user.name || "",
+                email: user.email || "invitado@superx.com",
+                name: user.name || "Cliente",
                 phone: user.phone || "",
                 city: user.city || "",
-                zipCode: user.zipCode || "",
-                address: user.address || "",
-                dni: user.dni || "",
+                zipCode: user.zipCode || "0000",
+                address: user.address || "S/N",
+                dni: user.dni || "00000000",
                 status: user.status || "",
                 country: user.country || "",
                 profileImage: user.profileImage || "",
@@ -183,13 +183,13 @@ export default function CartContent() {
             };
         }
         return {
-            email: "",
-            name: "",
+            email: "invitado@superx.com",
+            name: "Cliente",
             phone: "",
             city: "",
-            zipCode: "",
-            address: "",
-            dni: "",
+            zipCode: "0000",
+            address: "S/N",
+            dni: "00000000",
             status: "",
             country: "",
             profileImage: "",
@@ -1237,27 +1237,8 @@ export default function CartContent() {
                                             <User className="h-5 w-5" />
                                             Datos de Contacto
                                         </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="grid grid-cols-1 gap-4">
                                             <div className="space-y-2">
-                                                <Label className="text-sm font-semibold">Nombre Completo *</Label>
-                                                <Input
-                                                    placeholder="Ej: Juan Pérez"
-                                                    value={customerData.name}
-                                                    onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
-                                                    className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-semibold">Correo Electrónico *</Label>
-                                                <Input
-                                                    type="email"
-                                                    placeholder="tu@email.com"
-                                                    value={customerData.email}
-                                                    onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
-                                                    className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                />
-                                            </div>
-                                            <div className="space-y-2 md:col-span-2">
                                                 <Label className="text-sm font-semibold flex items-center gap-2">
                                                     Número de WhatsApp *
                                                     <span className="text-[10px] font-normal text-muted-foreground">(Solo números, ej: 5491122334455)</span>
@@ -1355,17 +1336,8 @@ export default function CartContent() {
                                             </div>
                                         ) : (
                                             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-semibold">Dirección de Envío *</Label>
-                                                    <Input
-                                                        placeholder="Calle, Número, Depto..."
-                                                        value={customerData.address}
-                                                        onChange={(e) => setCustomerData(prev => ({ ...prev, address: e.target.value }))}
-                                                        className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                    />
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2 col-span-2">
+                                                <div className="grid grid-cols-1 gap-4">
+                                                    <div className="space-y-2">
                                                         <Label className="text-sm font-semibold">Lugar *</Label>
                                                         <Select
                                                             value={selectedZoneId || ""}
@@ -1393,24 +1365,6 @@ export default function CartContent() {
                                                                 ))}
                                                             </SelectContent>
                                                         </Select>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label className="text-sm font-semibold">Código Postal *</Label>
-                                                        <Input
-                                                            placeholder="1234"
-                                                            value={customerData.zipCode}
-                                                            onChange={(e) => setCustomerData(prev => ({ ...prev, zipCode: e.target.value }))}
-                                                            className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label className="text-sm font-semibold">DNI/ID Fiscal *</Label>
-                                                        <Input
-                                                            placeholder="12.345.678"
-                                                            value={customerData.dni}
-                                                            onChange={(e) => setCustomerData(prev => ({ ...prev, dni: e.target.value }))}
-                                                            className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                        />
                                                     </div>
                                                 </div>
                                             </div>
