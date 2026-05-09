@@ -2101,8 +2101,7 @@ export default function CartContent() {
                                                 isUpdating
                                                     ? preview?.total || clientSubtotal
                                                     : preview?.total || clientSubtotal,
-                                                currency,
-                                                false,
+                                                currency
                                             )}
                                         </div>
                                     </div>
