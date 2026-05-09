@@ -1181,9 +1181,10 @@ export default function CartContent() {
                           </div>
                         </div>
                       );
-                    </div>
+                    })}
+                  </div>
 
-                    {/* Sección de Cupón */}
+                  {/* Sección de Cupón */}
                   {storeConfig?.enableCoupons !== false && (
                     <div className="mt-8 pt-6 border-t border-primary/10">
                       <Label className="mb-2 block">
@@ -1230,7 +1231,6 @@ export default function CartContent() {
                         </div>
                       )}
                     </div>
-                  )}
 
                   {/* Sección de Entrega */}
                   <div className="mt-8 pt-6 border-t border-primary/10">
