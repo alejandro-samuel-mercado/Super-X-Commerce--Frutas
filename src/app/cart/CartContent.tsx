@@ -1,31 +1,30 @@
 "use client";
 
 import { cart as cartContent } from "@/../content/cart";
+import { http } from "@/adapters/http";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+      Select,
+      SelectContent,
+      SelectItem,
+      SelectTrigger,
+      SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useDebounce } from "@/hooks/useDebounce";
-import { http } from "@/adapters/http";
 import { getIdempotencyKey } from "@/lib/idempotency";
 import { formatPrice } from "@/lib/utils";
 import { Branch, branchService } from "@/services/branch";
 import { PublicConfig, configService } from "@/services/config";
 import {
-    OrderPreviewRequest,
-    OrderPreviewResponse,
-    orderService,
+      OrderPreviewRequest,
+      OrderPreviewResponse,
+      orderService,
 } from "@/services/orders";
 import { PaymentGatewayOption, paymentService } from "@/services/payment";
 import { ShippingZone, shippingService } from "@/services/shipping";
@@ -33,21 +32,21 @@ import { useCartStore } from "@/store/cart";
 import { useCurrencyStore } from "@/store/currency";
 import { useMutation } from "@tanstack/react-query";
 import {
-    AlertCircle,
-    Award,
-    Check,
-    Loader2,
-    MapPin,
-    Minus,
-    Plus,
-    ShieldCheck,
-    Tag,
-    Trash2,
-    Truck,
-    User,
-    CheckCircle2,
-    QrCode,
-    Upload,
+      AlertCircle,
+      Award,
+      Check,
+      CheckCircle2,
+      Loader2,
+      MapPin,
+      Minus,
+      Plus,
+      QrCode,
+      ShieldCheck,
+      Tag,
+      Trash2,
+      Truck,
+      Upload,
+      User,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -1232,11 +1231,58 @@ export default function CartContent() {
                                         </div>
                                     )}
 
-                  {/* Sección de Entrega */}
+                                    {/* Sección de Contacto */}
+                                    <div className="mt-8 pt-6 border-t border-primary/10">
+                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-primary">
+                                            <User className="h-5 w-5" />
+                                            Datos de Contacto
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label className="text-sm font-semibold">Nombre Completo *</Label>
+                                                <Input
+                                                    placeholder="Ej: Juan Pérez"
+                                                    value={customerData.name}
+                                                    onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                                                    className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-sm font-semibold">Correo Electrónico *</Label>
+                                                <Input
+                                                    type="email"
+                                                    placeholder="tu@email.com"
+                                                    value={customerData.email}
+                                                    onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                                                    className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                                                />
+                                            </div>
+                                            <div className="space-y-2 md:col-span-2">
+                                                <Label className="text-sm font-semibold flex items-center gap-2">
+                                                    Número de WhatsApp *
+                                                    <span className="text-[10px] font-normal text-muted-foreground">(Solo números, ej: 5491122334455)</span>
+                                                </Label>
+                                                <Input
+                                                    type="tel"
+                                                    placeholder="5491122334455"
+                                                    value={customerData.phone}
+                                                    onChange={(e) => {
+                                                        const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+                                                        setCustomerData(prev => ({ ...prev, phone: onlyNums }));
+                                                    }}
+                                                    className="h-11 rounded-xl border-2 border-primary/30 focus:border-primary bg-white/50 font-medium"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <Separator className="my-8" />
+
+                                    {/* Sección de Entrega */}
                                     <div className="mt-8 pt-6 border-t border-primary/10">
                                         <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-primary">
                                             <Truck className="h-5 w-5" />
-                                            Método de Entrega
+                                            Tipo de envío
                                         </h3>
 
                                         <RadioGroup
@@ -1255,7 +1301,7 @@ export default function CartContent() {
                                                 <div className="flex items-center gap-3">
                                                     <RadioGroupItem value="pickup" id="pickup" />
                                                     <div className="flex flex-col">
-                                                        <span className="font-bold">Retiro en Tienda</span>
+                                                        <span className="font-bold">En Sucursales</span>
                                                         <span className="text-xs text-muted-foreground">Gratis</span>
                                                     </div>
                                                 </div>
@@ -1319,23 +1365,34 @@ export default function CartContent() {
                                                     />
                                                 </div>
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label className="text-sm font-semibold">Ciudad *</Label>
-                                                        <Input
-                                                            placeholder="Ciudad"
-                                                            value={customerData.city}
-                                                            onChange={(e) => setCustomerData(prev => ({ ...prev, city: e.target.value }))}
-                                                            className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                        />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label className="text-sm font-semibold">Provincia/Estado *</Label>
-                                                        <Input
-                                                            placeholder="Provincia"
-                                                            value={customerData.state}
-                                                            onChange={(e) => setCustomerData(prev => ({ ...prev, state: e.target.value }))}
-                                                            className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                        />
+                                                    <div className="space-y-2 col-span-2">
+                                                        <Label className="text-sm font-semibold">Lugar *</Label>
+                                                        <Select
+                                                            value={selectedZoneId || ""}
+                                                            onValueChange={(value) => {
+                                                                const zone = shippingZones.find(z => String(z.id) === value);
+                                                                if (zone) {
+                                                                    setSelectedZoneId(value);
+                                                                    setCustomerData(prev => ({
+                                                                        ...prev,
+                                                                        city: zone.city || "",
+                                                                        state: zone.province || "",
+                                                                        country: zone.country || prev.country || "",
+                                                                    }));
+                                                                }
+                                                            }}
+                                                        >
+                                                            <SelectTrigger className="h-11 rounded-xl border-2 border-primary/20 bg-white/50">
+                                                                <SelectValue placeholder="Seleccionar Lugar..." />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {shippingZones.map((zone) => (
+                                                                    <SelectItem key={zone.id} value={String(zone.id)}>
+                                                                        {[zone.city, zone.province, zone.country].filter(Boolean).join(", ")}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
                                                     </div>
                                                     <div className="space-y-2">
                                                         <Label className="text-sm font-semibold">Código Postal *</Label>
@@ -1358,53 +1415,6 @@ export default function CartContent() {
                                                 </div>
                                             </div>
                                         )}
-                                    </div>
-
-                                    <Separator className="my-8" />
-
-                                    {/* Sección de Contacto */}
-                                    <div className="mt-8 pt-6 border-t border-primary/10">
-                                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-primary">
-                                            <User className="h-5 w-5" />
-                                            Datos de Contacto
-                                        </h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-semibold">Nombre Completo *</Label>
-                                                <Input
-                                                    placeholder="Ej: Juan Pérez"
-                                                    value={customerData.name}
-                                                    onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
-                                                    className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-sm font-semibold">Correo Electrónico *</Label>
-                                                <Input
-                                                    type="email"
-                                                    placeholder="tu@email.com"
-                                                    value={customerData.email}
-                                                    onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
-                                                    className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
-                                                />
-                                            </div>
-                                            <div className="space-y-2 md:col-span-2">
-                                                <Label className="text-sm font-semibold flex items-center gap-2">
-                                                    Número de WhatsApp *
-                                                    <span className="text-[10px] font-normal text-muted-foreground">(Solo números, ej: 5491122334455)</span>
-                                                </Label>
-                                                <Input
-                                                    type="tel"
-                                                    placeholder="5491122334455"
-                                                    value={customerData.phone}
-                                                    onChange={(e) => {
-                                                        const onlyNums = e.target.value.replace(/[^0-9]/g, "");
-                                                        setCustomerData(prev => ({ ...prev, phone: onlyNums }));
-                                                    }}
-                                                    className="h-11 rounded-xl border-2 border-primary/30 focus:border-primary bg-white/50 font-medium"
-                                                />
-                                            </div>
-                                        </div>
                                     </div>
 
                                     {/* Canje de puntos */}
