@@ -40,15 +40,10 @@ export function formatPrice(
   const hasDecimals = !zeroDecimalCurrencies.includes(realCurrencyCode);
 
   const formatted = new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: realCurrencyCode,
+    style: "decimal",
     minimumFractionDigits: hasDecimals ? 2 : 0,
     maximumFractionDigits: hasDecimals ? 2 : 0,
   }).format(price);
 
-  if (realCurrencyCode === "VES") {
-    return formatted.replace("Bs. S", "Bs.");
-  }
-
-  return formatted;
+  return `Bs. ${formatted}`;
 }

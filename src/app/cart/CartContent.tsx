@@ -1888,9 +1888,6 @@ export default function CartContent() {
                                             Total Final
                                         </p>
                                         <div className="text-4xl font-black text-gray-950 flex items-baseline gap-1">
-                                            <span className="text-sm font-bold text-primary opacity-60">
-                                                {currency}
-                                            </span>
                                             {formatPrice(
                                                 isUpdating
                                                     ? preview?.total || clientSubtotal
