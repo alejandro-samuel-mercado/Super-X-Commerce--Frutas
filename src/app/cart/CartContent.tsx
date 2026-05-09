@@ -775,27 +775,9 @@ export default function CartContent() {
             case "cart":
                 // Validación básica de carrito
                 if (items.length === 0 || hasStockError) return false;
-
-                // Validación de contacto
-                if (!customerData.email || !customerData.name || !customerData.phone) return false;
-
-                // Validación de entrega
-                if (deliveryData.method === "pickup") {
-                    if (!deliveryData.pickupBranchId) return false;
-                    const availability = preview?.branchAvailability?.find(
-                        (b) => String(b.branchId) === deliveryData.pickupBranchId,
-                    );
-                    return availability ? availability.isAvailable : true;
-                } else if (deliveryData.method === "shipping") {
-                    if (storeConfig && storeConfig.enableShipping === false) return false;
-                    return (
-                        !!customerData.address &&
-                        !!customerData.city &&
-                        !!customerData.state &&
-                        !!customerData.zipCode &&
-                        isAddressValid
-                    );
-                }
+                
+                // Todas las validaciones de contacto y entrega han sido removidas
+                // porque el flujo ha sido simplificado directo a Pago QR.
                 return true;
             case "payment":
                 return !!selectedGateway;
@@ -806,6 +788,11 @@ export default function CartContent() {
 
     const handleNext = () => {
         if (currentStep === "cart") {
+            if (!customerData.phone || customerData.phone.trim() === "") {
+                setShowPhoneWarningDialog(true);
+                return;
+            }
+
             const qrOption = paymentOptions.find(o => o.slug === 'QR');
             if (qrOption) {
                 setSelectedGateway('QR');
