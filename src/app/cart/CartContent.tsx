@@ -1474,59 +1474,9 @@ export default function CartContent() {
                                     <div className="space-y-6">
                                         {/* Selección de métodos de pago */}
                                         <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                                                <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm">
-                                                    1
-                                                </span>
-                                                Selecciona tu método de pago ({currency})
-                                            </h3>
+                                           
 
-                                            {isPaymentLoading ? (
-                                                <div className="flex justify-center p-8">
-                                                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                                                </div>
-                                            ) : !paymentOptions || paymentOptions.length === 0 ? (
-                                                <div className="p-4 bg-amber-50 text-amber-800 rounded-xl border border-amber-200">
-                                                    No hay opciones de pago disponibles para esta moneda
-                                                    en este momento.
-                                                </div>
-                                            ) : (
-                                                <RadioGroup
-                                                    value={selectedGateway || ""}
-                                                    onValueChange={setSelectedGateway}
-                                                >
-                                                    <div className="grid grid-cols-1 gap-3">
-                                                        {paymentOptions.map((option) => (
-                                                            <Label
-                                                                key={option.slug}
-                                                                htmlFor={`gateway-${option.slug}`}
-                                                                className={`flex items-center justify-between p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md ${selectedGateway === option.slug
-                                                                        ? "border-primary bg-primary/5 shadow-primary/10"
-                                                                        : "border-border bg-white/50 hover:border-primary/30"
-                                                                    }`}
-                                                            >
-                                                                <div className="flex items-center gap-3">
-                                                                    <RadioGroupItem
-                                                                        value={option.slug}
-                                                                        id={`gateway-${option.slug}`}
-                                                                    />
-                                                                    <div className="flex flex-col">
-                                                                        <span className="font-bold text-base md:text-lg">
-                                                                            {option.name}
-                                                                        </span>
-                                                                        {option.type === "PRIMARY" && (
-                                                                            <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded-full w-fit">
-                                                                                Recomendado
-                                                                            </span>
-                                                                        )}
-                                                                    </div>
-                                                                </div>
-                                                            </Label>
-                                                        ))}
-                                                    </div>
-                                                </RadioGroup>
-                                            )}
-
+                                    
                                             {selectedGateway === "QR" && (
                                                 <Card className="p-6 border-4 border-secondary/40 bg-secondary/5 rounded-[2rem] space-y-6 mt-4 animate-in fade-in-50 duration-300">
                                                     <div className="flex items-center gap-3">
