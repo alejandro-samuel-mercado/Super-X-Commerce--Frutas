@@ -680,7 +680,8 @@ export default function CartContent() {
                             setIsUploadingProof(false);
                         }
                     }
-                    router.push(`/checkout/pending?saleId=${targetRef}`);
+                    window.alert("Compra realizada con éxito, nos comunicaremos a su WhatsApp para coordinar entrega");
+                    router.push("/");
                     setIsRedirecting(false);
                     return;
                 }
@@ -688,10 +689,12 @@ export default function CartContent() {
                 if (checkoutUrl) {
                     window.location.href = checkoutUrl;
                 } else if (saleId || data.uuid) {
-                    router.push(`/checkout/success?saleId=${data.uuid || saleId}`);
+                    window.alert("Compra realizada con éxito, nos comunicaremos a su WhatsApp para coordinar entrega");
+                    router.push("/");
                     setIsRedirecting(false);
                 } else {
-                    router.push("/profile");
+                    window.alert("Compra realizada con éxito, nos comunicaremos a su WhatsApp para coordinar entrega");
+                    router.push("/");
                     setIsRedirecting(false);
                 }
             } catch (error) {
