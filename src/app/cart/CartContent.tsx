@@ -147,6 +147,7 @@ export default function CartContent() {
     const [appliedPoints, setAppliedPoints] = useState<number>(0);
     const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
     const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+    const [showPhoneWarningDialog, setShowPhoneWarningDialog] = useState(false);
 
     const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
     const [lugarNumero, setLugarNumero] = useState<number | null>(null);
@@ -865,6 +866,10 @@ export default function CartContent() {
     }
 
     const handlePlaceOrder = () => {
+        if (!customerData.phone || customerData.phone.trim() === "") {
+            setShowPhoneWarningDialog(true);
+            return;
+        }
         createOrderMutation.mutate();
     };
 
@@ -1980,6 +1985,30 @@ export default function CartContent() {
                             className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-full h-14 px-10 text-lg shadow-xl hover:shadow-primary/20 transition-all hover:-translate-y-1"
                         >
                             Aceptar y Continuar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={showPhoneWarningDialog} onOpenChange={setShowPhoneWarningDialog}>
+                <DialogContent className="sm:max-w-md p-8 border-2 border-amber-200 rounded-3xl bg-white/95 backdrop-blur-xl shadow-2xl">
+                    <DialogHeader>
+                        <div className="mx-auto w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mb-4">
+                            <AlertCircle className="w-10 h-10 text-amber-600" />
+                        </div>
+                        <DialogTitle className="text-center text-2xl font-black text-amber-600">
+                            Número de WhatsApp Requerido
+                        </DialogTitle>
+                        <DialogDescription className="text-center text-lg mt-4 text-gray-600 font-medium leading-relaxed">
+                            Debe llenar con su número de WhatsApp para poder coordinar la entrega.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-center mt-8">
+                        <Button
+                            onClick={() => setShowPhoneWarningDialog(false)}
+                            className="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-full h-14 px-10 text-lg shadow-xl hover:shadow-amber-500/20 transition-all hover:-translate-y-1"
+                        >
+                            Entendido
                         </Button>
                     </DialogFooter>
                 </DialogContent>
