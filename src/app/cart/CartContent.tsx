@@ -1690,6 +1690,7 @@ export default function CartContent() {
                                                 Atrás
                                             </Button>
                                         </div>
+                                    </div>
                                 </div>
                             )}
                         </Card>
