@@ -308,22 +308,17 @@ export default function CartContent() {
             if (!currency) return;
             setIsPaymentLoading(true);
             try {
-                const options = await paymentService.getPaymentOptions(currency);
+                // Fetch to satisfy backend, but ignore its options
+                await paymentService.getPaymentOptions(currency);
 
+                const allOptions: PaymentGatewayOption[] = [{
+                    id: 9999,
+                    name: 'Pago con QR',
+                    slug: 'QR',
+                    type: 'PRIMARY',
+                    isFallback: true,
+                }];
 
-                const manualMethods: PaymentGatewayOption[] = [];
-                if (storeConfig?.enabledPaymentMethods?.includes('QR')) {
-                    manualMethods.push({
-                        id: 9999,
-                        name: 'Pago por QR',
-                        slug: 'QR',
-                        type: 'FALLBACK',
-                        isFallback: true,
-                    });
-                }
-
-
-                const allOptions = [...options, ...manualMethods];
                 setPaymentOptions(allOptions);
 
                 if (allOptions.length > 0) {
@@ -920,7 +915,7 @@ export default function CartContent() {
 
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                    <div className="lg:col-span-2 space-y-6">
+                    <div className={`${currentStep === "payment" ? "lg:col-span-3 max-w-2xl mx-auto w-full" : "lg:col-span-2"} space-y-6`}>
                         <Card className="p-6 md:p-8 rounded-[2rem] border-2 border-primary/40 bg-white/60 backdrop-blur-xl shadow-xl shadow-primary/5">
                             {/* Step 1: Carrito */}
                             {currentStep === "cart" && (
@@ -1540,7 +1535,7 @@ export default function CartContent() {
                                                         </div>
                                                         <div>
                                                             <h4 className="text-lg font-black uppercase tracking-tight text-secondary">
-                                                                Pago por QR
+                                                                Pago con QR
                                                             </h4>
                                                             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                                                                 Realiza tu transferencia escaneando el código QR
@@ -1656,156 +1651,51 @@ export default function CartContent() {
                                             )}
                                         </div>
 
-                                        <Separator />
-
-                                        <div>
-                                            <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-                                                <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm">
-                                                    2
-                                                </span>
-                                                {cartContent.step4.deliveryInfo}
-                                            </h3>
-                                            <Card className="p-6 rounded-2xl bg-white/50 border border-primary/10 shadow-sm">
-                                                <div className="flex items-center gap-3 mb-4">
-                                                    <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                                                        <User className="h-5 w-5 text-muted-foreground" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-bold text-lg">
-                                                            {customerData.name}
-                                                        </p>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {customerData.email}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                <Separator className="my-4" />
-
-                                                {deliveryData.method === "pickup" ? (
-                                                    <div className="flex gap-3">
-                                                        <MapPin className="h-5 w-5 text-primary mt-1" />
-                                                        <div>
-                                                            <p className="font-bold mb-1">
-                                                                {cartContent.step4.pickup}
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {
-                                                                    branches.find(
-                                                                        (b) =>
-                                                                            String(b.id) ===
-                                                                            deliveryData.pickupBranchId,
-                                                                    )?.name
-                                                                }
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {
-                                                                    branches.find(
-                                                                        (b) =>
-                                                                            String(b.id) ===
-                                                                            deliveryData.pickupBranchId,
-                                                                    )?.address
-                                                                }
-                                                            </p>
-                                                        </div>
-                                                    </div>
+                                        <div className="mt-8 space-y-3">
+                                            <Button
+                                                className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                                onClick={handlePlaceOrder}
+                                                disabled={
+                                                    createOrderMutation.isPending ||
+                                                    isUpdating ||
+                                                    isUploadingProof ||
+                                                    !selectedGateway ||
+                                                    isRedirecting ||
+                                                    preview === null ||
+                                                    (preview?.total !== undefined && preview.total <= 0) ||
+                                                    (selectedGateway === "QR" && !qrPaymentProof)
+                                                }
+                                            >
+                                                {createOrderMutation.isPending || isUploadingProof || isRedirecting ? (
+                                                    <>
+                                                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                                                        {isUploadingProof
+                                                            ? "Subiendo comprobante..."
+                                                            : isRedirecting
+                                                                ? "Redirigiendo..."
+                                                                : cartContent.step4.placingOrder}
+                                                    </>
+                                                ) : selectedGateway === "QR" && !qrPaymentProof ? (
+                                                    "Falta captura de pago"
                                                 ) : (
-                                                    <div className="flex gap-3">
-                                                        <MapPin className="h-5 w-5 text-primary mt-1" />
-                                                        <div>
-                                                            <p className="font-bold mb-1">
-                                                                {cartContent.step4.shipping}
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {customerData.address}
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                {customerData.city}, {customerData.state}{" "}
-                                                                {customerData.zipCode}
-                                                            </p>
-                                                        </div>
-                                                    </div>
+                                                    cartContent.step4.placeOrder
                                                 )}
-                                            </Card>
-                                        </div>
+                                            </Button>
 
-                                        <div className="text-sm text-muted-foreground p-4 bg-muted/30 rounded-xl">
-                                            {cartContent.step4.termsAccept}{" "}
-                                            <a
-                                                href="/terms"
-                                                className="text-primary hover:underline font-medium"
+                                            <Button
+                                                variant="ghost"
+                                                className="w-full rounded-full hover:bg-muted font-medium"
+                                                onClick={handleBack}
                                             >
-                                                {cartContent.step4.termsLink}
-                                            </a>{" "}
-                                            {cartContent.step4.and}{" "}
-                                            <a
-                                                href="/privacy"
-                                                className="text-primary hover:underline font-medium"
-                                            >
-                                                {cartContent.step4.privacyLink}
-                                            </a>
+                                                Atrás
+                                            </Button>
                                         </div>
-                                    </div>
-
-                                    {/* FREE SHIPPING PROGRESS BAR */}
-                                    {storeConfig?.enableShipping &&
-                                        storeConfig?.freeShippingThreshold && (
-                                            <div className="mt-6 p-4 bg-gradient-to-br from-primary/5 to-secondary/5 rounded-2xl border border-primary/10 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-500">
-                                                {(() => {
-                                                    const threshold = preview?.freeShippingThreshold
-                                                        ? Number(preview.freeShippingThreshold)
-                                                        : Number(storeConfig.freeShippingThreshold);
-                                                    const current = isUpdating
-                                                        ? clientSubtotal
-                                                        : preview?.subtotal || clientSubtotal;
-                                                    const remaining = Math.max(0, threshold - current);
-                                                    const progress = Math.min(
-                                                        100,
-                                                        (current / threshold) * 100,
-                                                    );
-                                                    const isFree = current >= threshold;
-
-                                                    return (
-                                                        <div className="space-y-3">
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-primary">
-                                                                    <Truck
-                                                                        size={14}
-                                                                        className={isFree ? "animate-bounce" : ""}
-                                                                    />
-                                                                    {isFree
-                                                                        ? "¡Envío Gratis Alcanzado!"
-                                                                        : "Envío a Domicilio"}
-                                                                </span>
-                                                                {!isFree && (
-                                                                    <span className="text-[10px] font-bold text-muted-foreground italic">
-                                                                        Faltan {formatPrice(remaining, currency)}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-
-                                                            <div className="h-2 w-full bg-primary/10 rounded-full overflow-hidden">
-                                                                <div
-                                                                    className={`h-full transition-all duration-1000 ease-out rounded-full ${isFree ? "bg-gradient-to-r from-emerald-400 to-emerald-600" : "bg-gradient-to-r from-primary to-secondary"}`}
-                                                                    style={{ width: `${progress}%` }}
-                                                                />
-                                                            </div>
-
-                                                            <p className="text-[10px] font-medium text-center text-muted-foreground leading-tight">
-                                                                {isFree
-                                                                    ? "¡Felicidades! Tu compra califica para envío sin costo."
-                                                                    : `Agrega ${formatPrice(remaining, currency)} más para desbloquear el ENVÍO GRATIS.`}
-                                                            </p>
-                                                        </div>
-                                                    );
-                                                })()}
-                                            </div>
-                                        )}
                                 </div>
                             )}
                         </Card>
                     </div>
 
+                    {currentStep !== "payment" && (
                     <div className="lg:col-span-1">
                         <Card className="p-6 md:p-8 md:px-5 rounded-[2rem] border-2 border-primary/70 bg-white/60 backdrop-blur-xl shadow-xl sticky top-0 overflow-hidden relative">
                             {/* Loader Localizado de la Tarjeta de Precios  */}
@@ -2067,56 +1957,24 @@ export default function CartContent() {
                             </div>
 
                             <div className="space-y-3">
-                                {currentStep === "payment" ? (
-                                    <Button
-                                        className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        onClick={handlePlaceOrder}
-                                        disabled={
-                                            createOrderMutation.isPending ||
-                                            isUpdating ||
-                                            isUploadingProof ||
-                                            !selectedGateway ||
-                                            isRedirecting ||
-                                            preview === null ||
-                                            (preview?.total !== undefined && preview.total <= 0) ||
-                                            (selectedGateway === "QR" && !qrPaymentProof)
-                                        }
-                                    >
-                                        {createOrderMutation.isPending || isUploadingProof || isRedirecting ? (
-                                            <>
-                                                <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                                                {isUploadingProof
-                                                    ? "Subiendo comprobante..."
-                                                    : isRedirecting
-                                                        ? "Redirigiendo..."
-                                                        : cartContent.step4.placingOrder}
-                                            </>
-                                        ) : selectedGateway === "QR" && !qrPaymentProof ? (
-                                            "Falta captura de pago"
-                                        ) : (
-                                            cartContent.step4.placeOrder
-                                        )}
-                                    </Button>
-                                ) : (
-                                    <Button
-                                        className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                        onClick={handleNext}
-                                        disabled={
-                                            !canProceed() ||
-                                            isUpdating ||
-                                            preview === null
-                                        }
-                                    >
-                                        {isUpdating ? (
-                                            <>
-                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                Calculando...
-                                            </>
-                                        ) : (
-                                            "Siguiente: Pagar"
-                                        )}
-                                    </Button>
-                                )}
+                                <Button
+                                    className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    onClick={handleNext}
+                                    disabled={
+                                        !canProceed() ||
+                                        isUpdating ||
+                                        preview === null
+                                    }
+                                >
+                                    {isUpdating ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            Calculando...
+                                        </>
+                                    ) : (
+                                        "Siguiente: Pagar"
+                                    )}
+                                </Button>
 
                                 {currentStep !== "cart" && (
                                     <Button
@@ -2139,6 +1997,7 @@ export default function CartContent() {
                             </div>
                         </Card>
                     </div>
+                    )}
                 </div>
             </div>
         </main>

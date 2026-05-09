@@ -290,7 +290,7 @@ function ProductsContent() {
 
   return (
     <main className="  pb-40 pt-24 max-md:pt-10 ">
-      <div className="mx-auto max-w-[80%] max-md:max-w-[90%] max-lg:max-w-[95%] max-sm:max-w-[80%]">
+      <div className="mx-auto max-w-[80%] max-md:max-w-[90%] max-lg:max-w-[95%] max-sm:max-w-[100%] max-sm:px-2">
         <div className="flex items-center justify-between mb-8">
           {/* Botón de filtros  */}
           <Sheet open={isMobileFilterOpen} onOpenChange={setIsMobileFilterOpen}>
@@ -414,7 +414,7 @@ function ProductsContent() {
           {/* Grid de productos */}
           <div className="flex-1 min-h-[1000px]">
             {isLoading || isFetching ? (
-              <div className="grid  md:grid-cols-3 grid-cols-4 max-md:grid-cols-2 gap-6">
+              <div className="grid  md:grid-cols-3 grid-cols-4 max-md:grid-cols-2 gap-6 max-sm:gap-2">
                 {Array.from({ length: 8 }).map((_, i) => (
                   <ProductSkeleton key={i} />
                 ))}
@@ -436,7 +436,7 @@ function ProductsContent() {
               </div>
             ) : (
               <>
-                <div className="grid max-md:grid-cols-2 max-sm:grid-cols-2 max-xl:grid-cols-3  grid-cols-4 gap-6">
+                <div className="grid max-md:grid-cols-2 max-sm:grid-cols-2 max-xl:grid-cols-3  grid-cols-4 gap-6 max-sm:gap-2">
                   {data.data.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}

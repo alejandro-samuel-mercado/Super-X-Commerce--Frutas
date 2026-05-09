@@ -28,7 +28,7 @@ export function TrendingProducts() {
             <h2 className="text-3xl font-bold mb-2">{home.trending.title}</h2>
             <p className="text-muted-foreground">{home.trending.subtitle}</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-6">
             {Array.from({ length: 5 }).map((_, idx) => (
               <div
                 key={idx}
@@ -46,7 +46,7 @@ export function TrendingProducts() {
      
       <div className="absolute -top-20 -left-20 w-72 h-72 bg-secondary/5 rounded-full blur-3xl" />
 
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2 sm:px-4">
         {/* Encabezado de la Sección */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-10 gap-4">
           <div>
@@ -74,7 +74,7 @@ export function TrendingProducts() {
         </div>
 
         {/* Grid de Productos */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-6">
           {data?.data.slice(0, 10).map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

@@ -39,10 +39,16 @@ export function formatPrice(
   const zeroDecimalCurrencies = ["CLP", "COP", "PYG", "JPY", "VES"];
   const hasDecimals = !zeroDecimalCurrencies.includes(realCurrencyCode);
 
-  return new Intl.NumberFormat(locale, {
+  const formatted = new Intl.NumberFormat(locale, {
     style: "currency",
     currency: realCurrencyCode,
     minimumFractionDigits: hasDecimals ? 2 : 0,
     maximumFractionDigits: hasDecimals ? 2 : 0,
   }).format(price);
+
+  if (realCurrencyCode === "VES") {
+    return formatted.replace("Bs. S", "Bs.");
+  }
+
+  return formatted;
 }
