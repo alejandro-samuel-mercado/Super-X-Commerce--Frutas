@@ -6,6 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+      Dialog,
+      DialogContent,
+      DialogDescription,
+      DialogFooter,
+      DialogHeader,
+      DialogTitle,
+} from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
       Select,
@@ -138,6 +146,7 @@ export default function CartContent() {
     const [pointsToUse, setPointsToUse] = useState<number>(0);
     const [appliedPoints, setAppliedPoints] = useState<number>(0);
     const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
+    const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
     const [selectedZoneId, setSelectedZoneId] = useState<string | null>(null);
     const [lugarNumero, setLugarNumero] = useState<number | null>(null);
@@ -680,8 +689,7 @@ export default function CartContent() {
                             setIsUploadingProof(false);
                         }
                     }
-                    window.alert("Compra realizada con éxito, nos comunicaremos a su WhatsApp para coordinar entrega");
-                    router.push("/");
+                    setShowSuccessDialog(true);
                     setIsRedirecting(false);
                     return;
                 }
@@ -689,12 +697,10 @@ export default function CartContent() {
                 if (checkoutUrl) {
                     window.location.href = checkoutUrl;
                 } else if (saleId || data.uuid) {
-                    window.alert("Compra realizada con éxito, nos comunicaremos a su WhatsApp para coordinar entrega");
-                    router.push("/");
+                    setShowSuccessDialog(true);
                     setIsRedirecting(false);
                 } else {
-                    window.alert("Compra realizada con éxito, nos comunicaremos a su WhatsApp para coordinar entrega");
-                    router.push("/");
+                    setShowSuccessDialog(true);
                     setIsRedirecting(false);
                 }
             } catch (error) {
@@ -1951,6 +1957,33 @@ export default function CartContent() {
                     )}
                 </div>
             </div>
+
+            <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
+                <DialogContent className="sm:max-w-md p-8 border-2 border-primary/20 rounded-3xl bg-white/95 backdrop-blur-xl shadow-2xl">
+                    <DialogHeader>
+                        <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                            <CheckCircle2 className="w-10 h-10 text-primary" />
+                        </div>
+                        <DialogTitle className="text-center text-3xl font-black bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                            ¡Compra Exitosa!
+                        </DialogTitle>
+                        <DialogDescription className="text-center text-lg mt-4 text-gray-600 font-medium leading-relaxed">
+                            Su compra ha sido realizada con éxito. Nos comunicaremos a su WhatsApp para coordinar la entrega.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="sm:justify-center mt-8">
+                        <Button
+                            onClick={() => {
+                                setShowSuccessDialog(false);
+                                router.push("/");
+                            }}
+                            className="w-full sm:w-auto bg-gradient-to-r from-primary to-secondary text-white font-bold rounded-full h-14 px-10 text-lg shadow-xl hover:shadow-primary/20 transition-all hover:-translate-y-1"
+                        >
+                            Aceptar y Continuar
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </main>
     );
 }
