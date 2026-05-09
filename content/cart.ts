@@ -3,10 +3,8 @@ export const cart = {
   
   stepper: {
     steps: [
-      { id: 1, label: "Carrito", key: "cart" },
-      { id: 2, label: "Datos", key: "data" },
-      { id: 3, label: "Envío", key: "delivery" },
-      { id: 4, label: "Pago", key: "payment" },
+      { id: 1, label: "Pedido", key: "cart" },
+      { id: 2, label: "Pago", key: "payment" },
     ],
   },
 

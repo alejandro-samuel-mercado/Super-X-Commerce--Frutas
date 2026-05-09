@@ -769,37 +769,30 @@ export default function CartContent() {
   const canProceed = () => {
     switch (currentStep) {
       case "cart":
-        return items.length > 0 && !hasStockError;
-      case "data":
-        return (
-          !!customerData.email &&
-          !!customerData.name &&
-          !!customerData.phone &&
-          !!customerData.dni &&
-          !!customerData.state &&
-          !!customerData.city &&
-          !!customerData.address &&
-          !!customerData.zipCode &&
-          !!customerData.country &&
-          isAddressValid
-        );
-      case "delivery":
+        // Validación básica de carrito
+        if (items.length === 0 || hasStockError) return false;
+        
+        // Validación de contacto
+        if (!customerData.email || !customerData.name || !customerData.phone) return false;
+
+        // Validación de entrega
         if (deliveryData.method === "pickup") {
           if (!deliveryData.pickupBranchId) return false;
           const availability = preview?.branchAvailability?.find(
             (b) => String(b.branchId) === deliveryData.pickupBranchId,
           );
           return availability ? availability.isAvailable : true;
+        } else if (deliveryData.method === "shipping") {
+          if (storeConfig && storeConfig.enableShipping === false) return false;
+          return (
+            !!customerData.address &&
+            !!customerData.city &&
+            !!customerData.state &&
+            !!customerData.zipCode &&
+            isAddressValid
+          );
         }
-        if (storeConfig && !storeConfig.enableShipping) {
-          return false;
-        }
-        return (
-          !!customerData.address &&
-          !!customerData.city &&
-          !!customerData.state &&
-          !!customerData.zipCode
-        );
+        return true;
       case "payment":
         return !!selectedGateway;
       default:
@@ -808,39 +801,19 @@ export default function CartContent() {
   };
 
   const handleNext = () => {
-    const steps: Step[] = ["cart", "data", "delivery", "payment"];
-    const currentIndex = steps.indexOf(currentStep);
-
-    if (currentStep === "cart" && whatsappCoordination.trim() !== "") {
-      setSelectedGateway("QR");
-      setCustomerData(prev => ({
-        ...prev,
-        phone: whatsappCoordination,
-        name: prev.name || "Cliente WhatsApp"
-      }));
+    if (currentStep === "cart") {
+      const qrOption = paymentOptions.find(o => o.slug === 'QR');
+      if (qrOption) {
+        setSelectedGateway('QR');
+      }
       setCurrentStep("payment");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    if (currentIndex < steps.length - 1) {
-      setCurrentStep(steps[currentIndex + 1]);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handleBack = () => {
-    const steps: Step[] = ["cart", "data", "delivery", "payment"];
-    const currentIndex = steps.indexOf(currentStep);
-
-    if (currentStep === "payment" && whatsappCoordination.trim() !== "") {
+    if (currentStep === "payment") {
       setCurrentStep("cart");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    if (currentIndex > 0) {
-      setCurrentStep(steps[currentIndex - 1]);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -1209,11 +1182,7 @@ export default function CartContent() {
                         </div>
                       );
                     })}
-                  </div>
-
-                  <Separator className="my-6" />
-
-                  {/* Cupón */}
+                        {/* Sección de Cupón */}
                   {storeConfig?.enableCoupons !== false && (
                     <div className="mt-8 pt-6 border-t border-primary/10">
                       <Label className="mb-2 block">
@@ -1262,29 +1231,181 @@ export default function CartContent() {
                     </div>
                   )}
 
-                  {/* WhatsApp para coordinar */}
-                  <div className="mt-6 pt-6 border-t border-primary/10 space-y-3">
-                    <Label className="font-bold text-base block text-primary">
-                      Whatsapp para coordinar:
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        type="tel"
-                        inputMode="numeric"
-                        placeholder="Ingresa solo números (ej: 5491122334455)"
-                        value={whatsappCoordination}
-                        onChange={(e) => {
-                          const onlyNums = e.target.value.replace(/[^0-9]/g, "");
-                          setWhatsappCoordination(onlyNums);
-                        }}
-                        className="rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 backdrop-blur-sm h-12 text-gray-900 placeholder:text-gray-400 font-medium"
-                      />
-                    </div>
-                    {storeConfig?.contactPhone && (
-                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider pl-1">
-                        Se coordinará la entrega con el comercio vía WhatsApp.
-                      </p>
+                  {/* Sección de Entrega */}
+                  <div className="mt-8 pt-6 border-t border-primary/10">
+                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-primary">
+                      <Truck className="h-5 w-5" />
+                      Método de Entrega
+                    </h3>
+                    
+                    <RadioGroup
+                      value={deliveryData.method}
+                      onValueChange={(val: "pickup" | "shipping") =>
+                        setDeliveryData((prev) => ({ ...prev, method: val }))
+                      }
+                      className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"
+                    >
+                      <Label
+                        className={`flex items-center justify-between p-4 border-2 rounded-2xl cursor-pointer transition-all hover:shadow-md ${
+                          deliveryData.method === "pickup"
+                            ? "border-primary bg-primary/5 shadow-primary/10"
+                            : "border-border bg-white/50 hover:border-primary/20"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem value="pickup" id="pickup" />
+                          <div className="flex flex-col">
+                            <span className="font-bold">Retiro en Tienda</span>
+                            <span className="text-xs text-muted-foreground">Gratis</span>
+                          </div>
+                        </div>
+                      </Label>
+
+                      <Label
+                        className={`flex items-center justify-between p-4 border-2 rounded-2xl cursor-pointer transition-all hover:shadow-md ${
+                          deliveryData.method === "shipping"
+                            ? "border-primary bg-primary/5 shadow-primary/10"
+                            : "border-border bg-white/50 hover:border-primary/20"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <RadioGroupItem value="shipping" id="shipping" />
+                          <div className="flex flex-col">
+                            <span className="font-bold">Envío a Domicilio</span>
+                            <span className="text-xs text-muted-foreground">Costo adicional</span>
+                          </div>
+                        </div>
+                      </Label>
+                    </RadioGroup>
+
+                    {deliveryData.method === "pickup" ? (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <Label className="text-sm font-semibold">Selecciona una sucursal *</Label>
+                        <Select
+                          value={deliveryData.pickupBranchId}
+                          onValueChange={(val) =>
+                            setDeliveryData((prev) => ({ ...prev, pickupBranchId: val }))
+                          }
+                        >
+                          <SelectTrigger className="h-12 rounded-xl border-2 border-primary/20 bg-white/50">
+                            <SelectValue placeholder="Elegir sucursal..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {branches.map((branch) => (
+                              <SelectItem key={branch.id} value={String(branch.id)}>
+                                {branch.name} - {branch.address}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={findNearestBranch}
+                          className="w-full rounded-xl border-primary/30 text-primary hover:bg-primary/5"
+                        >
+                          <MapPin className="h-4 w-4 mr-2" />
+                          Buscar sucursal más cercana
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-semibold">Dirección de Envío *</Label>
+                          <Input
+                            placeholder="Calle, Número, Depto..."
+                            value={customerData.address}
+                            onChange={(e) => setCustomerData(prev => ({ ...prev, address: e.target.value }))}
+                            className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold">Ciudad *</Label>
+                            <Input
+                              placeholder="Ciudad"
+                              value={customerData.city}
+                              onChange={(e) => setCustomerData(prev => ({ ...prev, city: e.target.value }))}
+                              className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold">Provincia/Estado *</Label>
+                            <Input
+                              placeholder="Provincia"
+                              value={customerData.state}
+                              onChange={(e) => setCustomerData(prev => ({ ...prev, state: e.target.value }))}
+                              className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold">Código Postal *</Label>
+                            <Input
+                              placeholder="1234"
+                              value={customerData.zipCode}
+                              onChange={(e) => setCustomerData(prev => ({ ...prev, zipCode: e.target.value }))}
+                              className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-sm font-semibold">DNI/ID Fiscal *</Label>
+                            <Input
+                              placeholder="12.345.678"
+                              value={customerData.dni}
+                              onChange={(e) => setCustomerData(prev => ({ ...prev, dni: e.target.value }))}
+                              className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     )}
+                  </div>
+
+                  <Separator className="my-8" />
+
+                  {/* Sección de Contacto */}
+                  <div className="mt-8 pt-6 border-t border-primary/10">
+                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2 text-primary">
+                      <User className="h-5 w-5" />
+                      Datos de Contacto
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Nombre Completo *</Label>
+                        <Input
+                          placeholder="Ej: Juan Pérez"
+                          value={customerData.name}
+                          onChange={(e) => setCustomerData(prev => ({ ...prev, name: e.target.value }))}
+                          className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold">Correo Electrónico *</Label>
+                        <Input
+                          type="email"
+                          placeholder="tu@email.com"
+                          value={customerData.email}
+                          onChange={(e) => setCustomerData(prev => ({ ...prev, email: e.target.value }))}
+                          className="h-11 rounded-xl border-2 border-primary/20 focus:border-primary bg-white/50"
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          Número de WhatsApp * 
+                          <span className="text-[10px] font-normal text-muted-foreground">(Solo números, ej: 5491122334455)</span>
+                        </Label>
+                        <Input
+                          type="tel"
+                          placeholder="5491122334455"
+                          value={customerData.phone}
+                          onChange={(e) => {
+                            const onlyNums = e.target.value.replace(/[^0-9]/g, "");
+                            setCustomerData(prev => ({ ...prev, phone: onlyNums }));
+                          }}
+                          className="h-11 rounded-xl border-2 border-primary/30 focus:border-primary bg-white/50 font-medium"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Canje de puntos */}
@@ -1361,7 +1482,7 @@ export default function CartContent() {
                       </div>
                     )}
 
-                  {/* Vista previa de puntos ganados - oculto si los puntos están deshabilitados */}
+                  {/* Vista previa de puntos ganados */}
                   {storeConfig?.enablePoints && (
                     <div className="mt-4 flex items-center gap-2 text-amber-600 font-bold bg-amber-50 p-3 rounded-2xl border border-amber-100 animate-in fade-in duration-500">
                       <Award className="h-4 w-4" />
@@ -1377,595 +1498,6 @@ export default function CartContent() {
                           })()}{" "}
                         puntos con esta compra!
                       </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Paso 2: Datos */}
-              {currentStep === "data" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-2 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent inline-block">
-                    {cartContent.step2.title}
-                  </h2>
-                  <p className="text-muted-foreground mb-8 text-lg">
-                    {cartContent.step2.subtitle}
-                  </p>
-
-
-
-                  <div className="space-y-4">
-                    <div>
-                      <Label>{cartContent.step2.fields.email.label} *</Label>
-                      <Input
-                        type="email"
-                        inputMode="email"
-                        placeholder={cartContent.step2.fields.email.placeholder}
-                        value={customerData.email}
-                        onChange={(e) =>
-                          setCustomerData((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        disabled={!!user}
-                        className="border-2 border-primary/50 focus:border-primary bg-white/50 backdrop-blur-sm"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label className="font-semibold mb-1.5 block">
-                          {cartContent.step2.fields.firstName.label} *
-                        </Label>
-                        <Input
-                          placeholder={
-                            cartContent.step2.fields.firstName.placeholder
-                          }
-                          value={customerData.name}
-                          onChange={(e) =>
-                            setCustomerData((prev) => ({
-                              ...prev,
-                              name: e.target.value,
-                            }))
-                          }
-                          className="h-12 placeholder:text-gray-400/70  rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50"
-                        />
-                      </div>
-                      <div>
-                        <Label className="font-semibold mb-1.5 block">
-                          {cartContent.step2.fields.phone.label} *
-                        </Label>
-                        <Input
-                          type="tel"
-                          inputMode="tel"
-                          placeholder={
-                            cartContent.step2.fields.phone.placeholder
-                          }
-                          value={customerData.phone}
-                          onChange={(e) =>
-                            setCustomerData((prev) => ({
-                              ...prev,
-                              phone: e.target.value,
-                            }))
-                          }
-                          className="h-12 placeholder:text-gray-400/70  rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label className="font-semibold mb-1.5 block">
-                        DNI *
-                      </Label>
-                      <Input
-                        placeholder="12345678"
-                        inputMode="numeric"
-                        value={customerData.dni}
-                        onChange={(e) =>
-                          setCustomerData((prev) => ({
-                            ...prev,
-                            dni: e.target.value,
-                          }))
-                        }
-                        className="h-12 rounded-xl border-2 text-gray-900 placeholder:text-gray-400/70 border-primary/40 focus:border-primary bg-white/50 placeholder:text-gray-400/70"
-                      />
-                    </div>
-
-                    {/* Campos de dirección con jerarquía */}
-                    {!isAddressValid &&
-                      customerData.city &&
-                      shippingZones.length > 0 && (
-                        <div className="p-3 mb-4 bg-destructive/10 text-destructive rounded-lg border border-destructive/20 text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-                          <AlertCircle className="h-4 w-4 shrink-0" />
-                          <span>
-                            La ciudad seleccionada no es válida para envío. Por
-                            favor, selecciona una de la lista.
-                          </span>
-                        </div>
-                      )}
-                    <div className="space-y-4">
-                      {/* Selección de país */}
-                      <div>
-                        <Label className="font-semibold mb-1.5 block">
-                          País *
-                        </Label>
-                        <Select
-                          value={customerData.country}
-                          onValueChange={(value) =>
-                            setCustomerData((prev) => ({
-                              ...prev,
-                              country: value,
-                              state: "",
-                              city: "",
-                            }))
-                          }
-                        >
-                          <SelectTrigger className="w-full bg-white/50 backdrop-blur-sm border-primary/40">
-                            <SelectValue placeholder="Seleccionar País" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Array.from(
-                              new Set(
-                                shippingZones
-                                  .map((z) => z.country || storeConfig?.country || "")
-                                  .filter(Boolean),
-                              ),
-                            ).map((c) => (
-                              <SelectItem key={c} value={c}>
-                                {c}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* Selección de provincia */}
-                        <div>
-                          <Label className="font-semibold mb-1.5 block">
-                            Provincia *
-                          </Label>
-                          <Select
-                            value={customerData.state}
-                            onValueChange={(value) =>
-                              setCustomerData((prev) => ({
-                                ...prev,
-                                state: value,
-                                city: "",
-                              }))
-                            }
-                            disabled={!customerData.country}
-                          >
-                            <SelectTrigger className="w-full bg-white/50 backdrop-blur-sm border-primary/40">
-                              <SelectValue placeholder="Seleccionar Provincia" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Array.from(
-                                new Set(
-                                  shippingZones
-                                    .filter(
-                                      (z) =>
-                                        (z.country || storeConfig?.country || "") ===
-                                        customerData.country,
-                                    )
-                                    .map((z) => z.province)
-                                    .filter(Boolean),
-                                ),
-                              ).map((p) => (
-                                <SelectItem
-                                  key={p as string}
-                                  value={p as string}
-                                >
-                                  {p}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Selección de ciudad */}
-                        <div>
-                          <Label className="font-semibold mb-1.5 block">
-                            Ciudad *
-                          </Label>
-                          <Select
-                            value={customerData.city}
-                            onValueChange={(value) =>
-                              setCustomerData((prev) => ({
-                                ...prev,
-                                city: value,
-                              }))
-                            }
-                            disabled={!customerData.state}
-                          >
-                            <SelectTrigger className="w-full bg-white/50 backdrop-blur-sm border-primary/40">
-                              <SelectValue placeholder="Seleccionar Ciudad" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Array.from(
-                                new Set(
-                                  shippingZones
-                                    .filter(
-                                      (z) =>
-                                        (z.country || storeConfig?.country || "") ===
-                                          customerData.country &&
-                                        z.province === customerData.state,
-                                    )
-                                    .map((z) => z.city)
-                                    .filter(Boolean),
-                                ),
-                              ).map((c) => (
-                                <SelectItem
-                                  key={c as string}
-                                  value={c as string}
-                                >
-                                  {c}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="font-semibold mb-1.5 block">
-                            Dirección *
-                          </Label>
-                          <Input
-                            placeholder="Calle 123"
-                            value={customerData.address}
-                            onChange={(e) =>
-                              setCustomerData((prev) => ({
-                                ...prev,
-                                address: e.target.value,
-                              }))
-                            }
-                            className="h-12 rounded-xl border-2 border-primary/40 text-gray-900 focus:border-primary bg-white/50 placeholder:text-gray-400/70 "
-                          />
-                        </div>
-                        <div>
-                          <Label className="font-semibold mb-1.5 block">
-                            Código Postal *
-                          </Label>
-                          <Input
-                            placeholder="1900"
-                            inputMode="numeric"
-                            value={customerData.zipCode}
-                            onChange={(e) =>
-                              setCustomerData((prev) => ({
-                                ...prev,
-                                zipCode: e.target.value,
-                              }))
-                            }
-                            className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 placeholder:text-gray-400/70"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {!user && (
-                      <div className="flex items-center gap-3 p-4 bg-white/50 rounded-xl border border-primary/10 mt-4">
-                        <Checkbox
-                          id="create-account"
-                          checked={createAccount}
-                          onCheckedChange={(checked) =>
-                            setCreateAccount(checked as boolean)
-                          }
-                          className="border-2 border-primary/40 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                        />
-                        <Label
-                          htmlFor="create-account"
-                          className="cursor-pointer font-medium cursor-pointer"
-                        >
-                          {cartContent.step2.createAccount}
-                        </Label>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Paso 3: Entrega */}
-              {currentStep === "delivery" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent inline-block">
-                    {cartContent.step3.title}
-                  </h2>
-
-                  <RadioGroup
-                    value={deliveryData.method}
-                    onValueChange={(value) =>
-                      setDeliveryData((prev) => ({
-                        ...prev,
-                        method: value as "pickup" | "shipping",
-                      }))
-                    }
-                  >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                      <Label
-                        htmlFor="pickup"
-                        className={`flex items-start space-x-3 p-6 border-2 rounded-2xl cursor-pointer transition-all hover:shadow-lg ${
-                          deliveryData.method === "pickup"
-                            ? "border-primary bg-primary/5 shadow-primary/10"
-                            : "border-border bg-white/50 hover:border-primary/40"
-                        }`}
-                      >
-                        <RadioGroupItem
-                          value="pickup"
-                          id="pickup"
-                          className="mt-1"
-                        />
-                        <div>
-                          <p className="font-bold text-lg mb-1">
-                            {cartContent.step3.methods.pickup.label}
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
-                            {cartContent.step3.methods.pickup.description}
-                          </p>
-                          <p className="text-sm font-bold text-green-600 bg-green-100 px-2 py-1 rounded inline-block">
-                            {cartContent.step3.methods.pickup.free}
-                          </p>
-                        </div>
-                      </Label>
-
-                      {storeConfig?.enableShipping !== false && (
-                        <Label
-                          htmlFor="shipping"
-                          className={`flex items-start space-x-3 p-6 border-2 rounded-2xl cursor-pointer transition-all hover:shadow-lg ${
-                            deliveryData.method === "shipping"
-                              ? "border-primary bg-primary/5 shadow-primary/10"
-                              : "border-border bg-white/50 hover:border-primary/40"
-                          }`}
-                        >
-                          <RadioGroupItem
-                            value="shipping"
-                            id="shipping"
-                            className="mt-1"
-                          />
-                          <div>
-                            <p className="font-bold text-lg mb-1">
-                              {cartContent.step3.methods.shipping.label}
-                            </p>
-                            <p className="text-sm text-muted-foreground leading-relaxed">
-                              {cartContent.step3.methods.shipping.description}
-                            </p>
-                          </div>
-                        </Label>
-                      )}
-                    </div>
-                  </RadioGroup>
-
-                  {deliveryData.method === "pickup" && (
-                    <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                      <div className="flex justify-between items-center mb-4">
-                        <Label className="font-semibold text-lg">
-                          {cartContent.step3.methods.pickup.selectBranch}
-                        </Label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={findNearestBranch}
-                          className="rounded-full border-primary/30 hover:bg-primary/5"
-                        >
-                          <MapPin className="h-4 w-4 mr-2 text-primary" />
-                          {cartContent.step3.methods.pickup.findNearest}
-                        </Button>
-                      </div>
-                      <div className="space-y-3">
-                        {branches.map((branch) => {
-                          const availability =
-                            preview?.branchAvailability?.find(
-                              (b) => b.branchId === branch.id,
-                            );
-
-                          const isBranchAvailable = availability
-                            ? availability.isAvailable
-                            : true;
-                          const isSelected =
-                            deliveryData.pickupBranchId === String(branch.id);
-
-                          return (
-                            <Button
-                              key={branch.id}
-                              disabled={!isBranchAvailable}
-                              variant={isSelected ? "secondary" : "outline"}
-                              className={`w-full justify-start h-auto py-4 px-6 rounded-xl border-2 transition-all ${
-                                !isBranchAvailable
-                                  ? "opacity-60 bg-gray-50 border-gray-200 cursor-not-allowed"
-                                  : isSelected
-                                    ? "border-primary bg-primary/5 hover:bg-primary/10"
-                                    : "border-transparent bg-white/50 hover:border-primary/30"
-                              }`}
-                              onClick={() => {
-                                if (isBranchAvailable) {
-                                  setDeliveryData((prev) => ({
-                                    ...prev,
-                                    pickupBranchId: String(branch.id),
-                                  }));
-                                }
-                              }}
-                            >
-                              <MapPin
-                                className={`h-5 w-5 mr-3 shrink-0 ${
-                                  !isBranchAvailable
-                                    ? "text-gray-400"
-                                    : isSelected
-                                      ? "text-primary"
-                                      : "text-muted-foreground"
-                                }`}
-                              />
-                              <div className="text-left w-full">
-                                <div className="flex justify-between items-center w-full">
-                                  <span
-                                    className={`font-bold block ${
-                                      !isBranchAvailable
-                                        ? "text-gray-500 line-through"
-                                        : "text-gray-700"
-                                    }`}
-                                  >
-                                    {branch.name}
-                                  </span>
-                                  {!isBranchAvailable && (
-                                    <span className="text-[10px] font-bold text-destructive bg-destructive/10 px-2 py-1 rounded">
-                                      Stock Insuficiente
-                                    </span>
-                                  )}
-                                </div>
-                                <span
-                                  className={`text-sm font-normal ${
-                                    !isBranchAvailable
-                                      ? "text-gray-400"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {branch.address}{" "}
-                                  {branch.city && `, ${branch.city}`}
-                                </span>
-
-                                {!isBranchAvailable && (
-                                  <div className="mt-2 text-[11px] leading-tight text-gray-500 bg-gray-100 p-2.5 rounded-lg border border-gray-200">
-                                    <strong className="block mb-0.5 text-gray-600">
-                                      Stock físico insuficiente
-                                    </strong>
-                                    Esta sucursal no posee la cantidad exacta de
-                                    todos los productos de tu carrito. Reduce
-                                    cantidades o elige{" "}
-                                    <strong>Envío a Domicilio</strong>.
-                                    {availability?.missingItems &&
-                                      availability.missingItems.length > 0 && (
-                                        <ul className="mt-1.5 space-y-0.5 text-left border-t border-gray-200 pt-1.5">
-                                          {availability.missingItems.map(
-                                            (item: any, i: any) => (
-                                              <li
-                                                key={i}
-                                                className="text-[10px] text-destructive/80"
-                                              >
-                                                • {item.productName}:{" "}
-                                                <b>Pidió {item.requested}</b>{" "}
-                                                (Disp. {item.available})
-                                              </li>
-                                            ),
-                                          )}
-                                        </ul>
-                                      )}
-                                  </div>
-                                )}
-                              </div>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {deliveryData.method === "shipping" && (
-                    <div className="p-6 bg-white/50 rounded-2xl border border-primary/10 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
-                      <div className="flex items-center gap-2 mb-2">
-                        <MapPin className="h-5 w-5 text-primary" />
-                        <p className="font-bold text-lg">Dirección de Envío</p>
-                      </div>
-
-                      <div className="space-y-4 ml-7 animate-in fade-in duration-200">
-                        <div>
-                          <Label className="font-semibold mb-1.5 block">
-                            Dirección *
-                          </Label>
-                          <Input
-                            value={customerData.address}
-                            onChange={(e) =>
-                              setCustomerData((prev) => ({
-                                ...prev,
-                                address: e.target.value,
-                              }))
-                            }
-                            placeholder="Calle y altura"
-                            className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 text-gray-900 placeholder:text-gray-400"
-                          />
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="font-semibold mb-1.5 block">
-                              Lugar *
-                            </Label>
-                            <Select
-                              value={selectedZoneId || ""}
-                              onValueChange={(value) => {
-                                const zone = shippingZones.find(z => String(z.id) === value);
-                                if (zone) {
-                                  setSelectedZoneId(value);
-                                  setLugarNumero(Number(zone.cost));
-                                  setCustomerData((prev) => ({
-                                    ...prev,
-                                    city: zone.city || "",
-                                    state: zone.province || "",
-                                    country: zone.country || prev.country || "",
-                                  }));
-                                }
-                              }}
-                            >
-                              <SelectTrigger className="w-full bg-white/50 backdrop-blur-sm border-primary/40 h-12 rounded-xl text-gray-900">
-                                <SelectValue placeholder="Seleccionar Lugar" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {shippingZones.map((zone) => (
-                                  <SelectItem key={zone.id} value={String(zone.id)}>
-                                    {[zone.city, zone.province, zone.country].filter(Boolean).join(", ")}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label className="font-semibold mb-1.5 block">
-                              Número (Costo de Envío) *
-                            </Label>
-                            <Input
-                              type="number"
-                              value={lugarNumero ?? ""}
-                              readOnly
-                              placeholder="Costo de envío"
-                              className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-gray-100 text-gray-900 placeholder:text-gray-400 cursor-not-allowed"
-                            />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="font-semibold mb-1.5 block">
-                            Código Postal *
-                          </Label>
-                          <Input
-                            value={customerData.zipCode}
-                            onChange={(e) =>
-                              setCustomerData((prev) => ({
-                                ...prev,
-                                zipCode: e.target.value,
-                              }))
-                            }
-                            placeholder="Código Postal"
-                            className="h-12 rounded-xl border-2 border-primary/40 focus:border-primary bg-white/50 text-gray-900 placeholder:text-gray-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="ml-7 pt-2">
-                        {previewMutation.isPending ? (
-                          <p className="text-sm text-primary animate-pulse flex items-center gap-2">
-                            <Loader2 className="h-3 w-3 animate-spin" />{" "}
-                            Actualizando costo de envío...
-                          </p>
-                        ) : (
-                          <div className="flex items-center gap-2 text-green-600 bg-green-50 px-3 py-1 rounded-full w-fit">
-                            <Check className="h-3 w-3" />
-                            <span className="text-xs font-bold">
-                              Costo de envío actualizado
-                            </span>
-                          </div>
-                        )}
-                      </div>
                     </div>
                   )}
                 </div>
@@ -2559,105 +2091,93 @@ export default function CartContent() {
                 <Separator className="my-6 bg-primary/20" />
 
                 <div className="flex  items-end mb-8 relative gap-1">
-                  <span className="text-lg font-bold text-muted-foreground shrink-0">
-                    {cartContent.step1.summary.total}
-                  </span>
-                  <div className="flex flex-col  flex-1 min-w-0">
-                    <span 
-                      className="text-xl sm:text-2xl font-bold bg-gradient-to-br from-primary to-secondary bg-clip-text text-transparent text-right break-all"
-                    >
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1 ml-1">
+                      Total Final
+                    </p>
+                    <div className="text-4xl font-black text-gray-950 flex items-baseline gap-1">
+                      <span className="text-sm font-bold text-primary opacity-60">
+                        {currency}
+                      </span>
                       {formatPrice(
                         isUpdating
-                          ? clientSubtotal +
-                              clientSubtotal *
-                                (Number(storeConfig?.taxRate || 0) / 100)
-                          : preview?.total !== undefined &&
-                              preview.total !== null
-                            ? preview.total
-                            : clientSubtotal +
-                              clientSubtotal *
-                                (Number(storeConfig?.taxRate || 0) / 100),
+                          ? preview?.total || clientSubtotal
+                          : preview?.total || clientSubtotal,
                         currency,
+                        false,
                       )}
-                    </span>
-                    {isUpdating && (
-                      <span className="text-[10px] text-primary font-bold animate-pulse absolute -bottom-5 right-0 whitespace-nowrap">
-                        Sincronizando con servidor seguro...
-                      </span>
-                    )}
+                    </div>
                   </div>
+                  {isUpdating && (
+                    <span className="text-[10px] text-primary font-bold animate-pulse absolute -bottom-5 right-0 whitespace-nowrap">
+                      Sincronizando...
+                    </span>
+                  )}
                 </div>
               </div>
 
-              <div className="space-y-3">
-                {currentStep === "payment" ? (
-                  <Button
-                    className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handlePlaceOrder}
-                    disabled={
-                      createOrderMutation.isPending ||
-                      isUpdating ||
-                      isUploadingProof ||
-                      !selectedGateway ||
-                      isRedirecting ||
-                      preview === null ||
-                      (preview?.total !== undefined && preview.total <= 0) ||
-                      (selectedGateway === "QR" && !qrPaymentProof)
-                    }
-                  >
-                    {createOrderMutation.isPending || isUploadingProof || isRedirecting ? (
-                      <>
-                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                        {isUploadingProof
-                          ? "Subiendo comprobante..."
-                          : isRedirecting
-                          ? "Redirigiendo..."
-                          : cartContent.step4.placingOrder}
-                      </>
-                    ) : selectedGateway === "QR" && !qrPaymentProof ? (
-                      "Falta captura de pago"
-                    ) : (
-                      cartContent.step4.placeOrder
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    onClick={handleNext}
-                    disabled={
-                      !canProceed() ||
-                      isUpdating ||
-                      preview === null
-                    }
-                  >
-                    {isUpdating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Calculando...
-                      </>
-                    ) : (
-                      <>
-                        {currentStep === "cart" &&
-                          cartContent.step1.summary.proceedToCheckout}
-                        {currentStep === "data" &&
-                          cartContent.step2.continueButton}
-                        {currentStep === "delivery" &&
-                          cartContent.step3.continueButton}
-                      </>
-                    )}
-                  </Button>
-                )}
+                <div className="space-y-3">
+                  {currentStep === "payment" ? (
+                    <Button
+                      className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handlePlaceOrder}
+                      disabled={
+                        createOrderMutation.isPending ||
+                        isUpdating ||
+                        isUploadingProof ||
+                        !selectedGateway ||
+                        isRedirecting ||
+                        preview === null ||
+                        (preview?.total !== undefined && preview.total <= 0) ||
+                        (selectedGateway === "QR" && !qrPaymentProof)
+                      }
+                    >
+                      {createOrderMutation.isPending || isUploadingProof || isRedirecting ? (
+                        <>
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          {isUploadingProof
+                            ? "Subiendo comprobante..."
+                            : isRedirecting
+                            ? "Redirigiendo..."
+                            : cartContent.step4.placingOrder}
+                        </>
+                      ) : selectedGateway === "QR" && !qrPaymentProof ? (
+                        "Falta captura de pago"
+                      ) : (
+                        cartContent.step4.placeOrder
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full h-14 text-lg font-bold rounded-full bg-gradient-to-r from-primary to-secondary shadow-lg hover:shadow-xl hover:shadow-primary/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={handleNext}
+                      disabled={
+                        !canProceed() ||
+                        isUpdating ||
+                        preview === null
+                      }
+                    >
+                      {isUpdating ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Calculando...
+                        </>
+                      ) : (
+                        "Siguiente: Pagar"
+                      )}
+                    </Button>
+                  )}
 
-                {currentStep !== "cart" && (
-                  <Button
-                    variant="ghost"
-                    className="w-full rounded-full hover:bg-muted font-medium bg-red-200"
-                    onClick={handleBack}
-                  >
-                    Atrás
-                  </Button>
-                )}
-              </div>
+                  {currentStep !== "cart" && (
+                    <Button
+                      variant="ghost"
+                      className="w-full rounded-full hover:bg-muted font-medium"
+                      onClick={handleBack}
+                    >
+                      Atrás
+                    </Button>
+                  )}
+                </div>
 
               <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <div className="flex gap-2 opacity-50">
